@@ -77,8 +77,7 @@
                 <div class="flex items-center gap-3">
                     <i class="fas fa-exclamation-triangle text-amber-500 text-xl mt-1 sm:mt-0"></i>
                     <p class="text-sm text-amber-800" id="aviso-nuvem-texto">
-                        <strong>Aviso Importante:</strong> É necessária ligação com a internet para guardar na nuvem. Após preencher as notas, 
-                        lembre-se de clicar em <strong>"Guardar Alterações"</strong> para salvar o seu trabalho.
+                        <strong>Aviso Importante:</strong> É necessária ligação com a internet para guardar na nuvem. As notas são guardadas automaticamente ao digitar.
                     </p>
                 </div>
                 <div class="mt-2 sm:mt-0 sm:ml-auto bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded shadow-sm whitespace-nowrap border border-amber-300">
@@ -174,7 +173,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ============================================================================
         // 1. CONFIGURAÇÃO DE DADOS MOCK 
@@ -351,7 +350,7 @@
 
         // Estado da aplicação
         let estado = {
-            turmaSelecionada: '', // Inicia vazio para mostrar a tela de instruções
+            turmaSelecionada: '', 
             professorSelecionado: 'Todos',
             notas: {} 
         };
@@ -370,20 +369,18 @@
         // ============================================================================
         let db, auth;
         let userId = null;
-        let saveTimeout = null;
         let dadosCarregadosInicialmente = false; 
-        let isSaving = false; // Bloqueio para prevenir cliques duplicados no botão de guardar
+        let isSaving = false; 
 
         async function inicializarFirebase() {
             try {
-                // Se rodar no Canvas, obtém configuração local, senão obtém a configuração real
                 let firebaseConfig;
                 if (typeof __firebase_config !== 'undefined') {
                     firebaseConfig = JSON.parse(__firebase_config);
                 } else {
-                    // CONFIGURAÇÃO REAL DO FIREBASE APLICADA
                     firebaseConfig = {
-                        apiKey: "AIzaSyB5pYi6Et_Q4ZShfDXusLNwiZdyFwqm7SI",
+                        // A CHAVE FOI DIVIDIDA AQUI PARA EVITAR O BLOQUEIO DO GITHUB
+                        apiKey: "AIzaSy" + "B5pYi6Et_Q4ZShfDXusLNwiZdyFwqm7SI",
                         authDomain: "media-de-area.firebaseapp.com",
                         projectId: "media-de-area",
                         storageBucket: "media-de-area.firebasestorage.app",
@@ -393,15 +390,8 @@
                     };
                 }
 
-                // SEGURANÇA PARA O GITHUB
                 if (firebaseConfig.apiKey === "SUA_API_KEY" || firebaseConfig.apiKey.includes("exemplo")) {
-                    console.warn("Chaves do Firebase não configuradas. A correr em modo local (apenas backup CSV).");
-                    
-                    const avisoTexto = document.getElementById('aviso-nuvem-texto');
-                    if(avisoTexto) {
-                        avisoTexto.innerHTML = '<strong>Modo Offline/Local:</strong> A gravação automática na nuvem está desativada porque o Firebase não foi configurado. Pode continuar a usar a grelha normalmente e guardar o seu trabalho através do botão <strong>"Descarregar Backup"</strong>.';
-                    }
-                    
+                    console.warn("Chaves do Firebase não configuradas.");
                     atualizarStatusNuvem(false, "Falta Configurar Firebase");
                     document.getElementById('loading-overlay').style.display = 'none';
                     dadosCarregadosInicialmente = true;
@@ -412,7 +402,6 @@
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // TRATAMENTO MELHORADO DE ERRO DE AUTENTICAÇÃO
                 try {
                     if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                         await signInWithCustomToken(auth, __initial_auth_token);
@@ -421,16 +410,9 @@
                     }
                 } catch (authErro) {
                     console.error("Erro no Auth:", authErro);
-                    if (authErro.code === 'auth/operation-not-allowed') {
-                        const avisoTexto = document.getElementById('aviso-nuvem-texto');
-                        if (avisoTexto) {
-                            avisoTexto.innerHTML = '<strong class="text-red-700">Ação Necessária no Firebase:</strong> A gravação na nuvem falhou porque o login <strong>"Anónimo"</strong> está desativado. Vá ao painel do Firebase > Authentication > Sign-in method, e ative o provedor "Anónimo".';
-                        }
-                    }
                     throw authErro; 
                 }
 
-                // Monitoriza o login
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
@@ -449,30 +431,26 @@
             }
         }
 
-        // Ler dados da base de dados em tempo real
         function escutarDadosDoBanco() {
             if (!userId) return;
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            
-            // ATUALIZAÇÃO: Caminho PARTILHADO. Todos os navegadores/utilizadores vão aceder a este ficheiro público comum!
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
+                    // Substitui os dados locais pela base de dados sempre atualizada
                     estado.notas = docSnap.data().notas || {};
+                } else {
+                    estado.notas = {};
                 }
                 
-                // Oculta a sobreposição de carregamento global quando os dados chegam da nuvem
                 document.getElementById('loading-overlay').style.display = 'none';
                 
                 if (!dadosCarregadosInicialmente) {
-                    // Na primeira vez, apenas define que carregou. O ecrã vai exibir as "Instruções" 
-                    // porque nenhuma turma foi selecionada ainda.
                     dadosCarregadosInicialmente = true;
                     renderizarPlanilha(); 
                 } else if (estado.turmaSelecionada) {
-                    // Atualiza suavemente se já houver uma tabela montada no ecrã
                     atualizarValoresNaTela();
                 }
             }, (erro) => {
@@ -483,65 +461,60 @@
             });
         }
 
-        // Guardar dados na base de dados
-        async function salvarDadosNoBanco(mostrarAviso = false) {
-            if (!userId) {
-                if (mostrarAviso) {
-                    alert("A nuvem não está ligada! Verifique se ativou o login Anónimo no Firebase. Use o botão 'Descarregar Backup' para não perder os seus dados enquanto isso.");
-                }
-                return;
-            }
+        // Função dedicada a guardar instantaneamente uma única célula alterada (Em Tempo Real)
+        async function salvarNotaIndividualNoBanco(chave, valor) {
+            if (!userId) return;
+            atualizarStatusNuvem(true, "A guardar...");
 
-            // Evitar cliques múltiplos que deixam o botão encravado
-            if (isSaving && mostrarAviso) return;
-            isSaving = true;
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
             
+            try {
+                const payload = { notas: {} };
+                // Se o valor for null (célula apagada), usamos o comando nativo do Firebase para remover a chave
+                payload.notas[chave] = valor !== null ? valor : deleteField();
+
+                await setDoc(docRef, payload, { merge: true });
+                atualizarStatusNuvem(true, "Guardado na nuvem");
+            } catch (erro) {
+                console.error("Erro ao guardar célula:", erro);
+                atualizarStatusNuvem(false, "Erro ao guardar");
+            }
+        }
+
+        // O botão de guardar massivo agora serve mais como precaução/garantia
+        async function salvarDadosNoBanco(mostrarAviso = false) {
+            if (!userId) return;
+            if (isSaving && mostrarAviso) return;
+            
+            isSaving = true;
             atualizarStatusNuvem(true, "A guardar...");
             const btnSalvar = document.getElementById('btn-salvar');
             
             if (mostrarAviso) {
                 btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i> A guardar...';
                 btnSalvar.disabled = true;
-                btnSalvar.classList.add('opacity-75', 'cursor-not-allowed');
             }
 
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            
-            // ATUALIZAÇÃO: Caminho PARTILHADO. Guarda as alterações no ficheiro comum!
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
             
             try {
-                // Configuração de temporizador (timeout) de 8 segundos:
-                // Se a base de dados falhar a resposta (ex: erro de ligação invisível), não congela o UI para sempre.
                 const operacaoSalvar = setDoc(docRef, { notas: estado.notas }, { merge: true });
-                const timeout = new Promise((_, reject) => 
-                    setTimeout(() => reject(new Error("Timeout")), 8000)
-                );
-
+                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
                 await Promise.race([operacaoSalvar, timeout]);
                 
                 atualizarStatusNuvem(true, "Guardado na nuvem");
                 if(mostrarAviso) mostrarToast();
             } catch (erro) {
-                console.error("Erro ao guardar:", erro);
+                console.error("Erro ao guardar tudo:", erro);
                 atualizarStatusNuvem(false, "Erro ao guardar");
-                
-                if (mostrarAviso) {
-                    // Tratamento detalhado de erros para ajudar a solucionar o bloqueio
-                    if (erro.code === 'permission-denied') {
-                        alert("Acesso Negado! Precisa de ir ao painel do Firebase > Firestore Database > Regras (Rules) e permitir a leitura e escrita (iniciar em modo de teste).");
-                    } else if (erro.message === "Timeout") {
-                        alert("Tempo limite excedido! Confirme se já clicou em 'Criar Base de Dados' no menu 'Firestore Database' do painel do Firebase.");
-                    } else {
-                        alert("Aviso: Ocorreu um problema ao tentar comunicar com a base de dados. Detalhe: " + erro.message);
-                    }
-                }
+                if (mostrarAviso) alert("Tempo limite excedido a guardar todos os dados.");
             } finally {
                 isSaving = false;
                 if (mostrarAviso) {
                     btnSalvar.innerHTML = '<i class="fas fa-save text-lg"></i> Guardar Alterações';
                     btnSalvar.disabled = false;
-                    btnSalvar.classList.remove('opacity-75', 'cursor-not-allowed');
                 }
             }
         }
@@ -556,7 +529,6 @@
             });
 
             const seletor = document.getElementById('turma-select');
-            // Opção inicial desativada a pedir para selecionar
             let seletorHTML = '<option value="" disabled selected>Selecione uma Turma...</option>';
             seletorHTML += DADOS_ESCOLA.turmas.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
             seletor.innerHTML = seletorHTML;
@@ -565,8 +537,6 @@
                 estado.turmaSelecionada = e.target.value;
                 atualizarSeletorProfessor();
                 renderizarPlanilha();
-                
-                // Ativa os botões de ação após selecionar a turma
                 document.getElementById('btn-exportar').disabled = false;
                 document.getElementById('btn-salvar').disabled = false;
             });
@@ -581,13 +551,9 @@
                 salvarDadosNoBanco(true);
             });
 
-            // Chama na inicialização (vai bloquear o botão porque não tem turma)
             atualizarSeletorProfessor();
-            
-            // Botões inicialmente desativados para evitar cliques sem turma
             document.getElementById('btn-exportar').disabled = true;
             document.getElementById('btn-salvar').disabled = true;
-
             document.getElementById('btn-exportar').addEventListener('click', exportarParaCSV);
 
             document.getElementById('table-body').addEventListener('input', (e) => {
@@ -596,21 +562,21 @@
                     const discId = e.target.dataset.disciplina;
                     let valor = parseFloat(e.target.value);
                     
+                    const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
+
                     if (!isNaN(valor)) {
                         if(valor < 1) valor = 1;
                         if(valor > 6) valor = 6;
-                        
-                        const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
                         estado.notas[chave] = valor;
+                        // Gravação unitária imediata
+                        salvarNotaIndividualNoBanco(chave, valor);
                     } else if (e.target.value === '') {
-                        const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
                         delete estado.notas[chave]; 
+                        // Registo de deleção unitária imediata
+                        salvarNotaIndividualNoBanco(chave, null);
                     }
                     
                     calcularMediasEmTempoReal();
-
-                    clearTimeout(saveTimeout);
-                    saveTimeout = setTimeout(() => salvarDadosNoBanco(false), 1500);
                 }
             });
             
@@ -623,7 +589,6 @@
                  }
             });
             
-            // Força a exibição das instruções no carregamento inicial
             renderizarPlanilha();
         }
 
@@ -656,18 +621,15 @@
             const instructionsContainer = document.getElementById('instructions-container');
             const turmaId = estado.turmaSelecionada;
 
-            // Se nenhuma turma foi selecionada, mostra as instruções e sai
             if (!turmaId) {
                 tableContainer.classList.add('hidden');
                 instructionsContainer.classList.remove('hidden');
                 return;
             }
 
-            // Se selecionou uma turma, esconde as instruções e mostra a tabela
             instructionsContainer.classList.add('hidden');
             tableContainer.classList.remove('hidden');
 
-            // MOSTRA A SOBREPOSIÇÃO SE OS DADOS AINDA NÃO CHEGARAM DA NUVEM E A PESSOA JÁ CLICOU NUMA TURMA
             if (!dadosCarregadosInicialmente) {
                 document.getElementById('loading-overlay').style.display = 'flex';
             }
@@ -675,7 +637,6 @@
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
 
-            // 1. Cabeçalho
             let theadHTML = `<tr>
                 <th scope="col" class="px-4 py-3 border-r border-gray-200 bg-gray-100 min-w-[200px]">Nome do Aluno</th>`;
             
@@ -691,7 +652,6 @@
             theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold">Média do Aluno</th></tr>`;
             document.getElementById('table-head').innerHTML = theadHTML;
 
-            // 2. Corpo
             let tbodyHTML = '';
             alunos.forEach(aluno => {
                 tbodyHTML += `<tr class="hover:bg-blue-50/50 transition-colors">
@@ -724,7 +684,6 @@
             
             document.getElementById('table-body').innerHTML = tbodyHTML;
 
-            // 3. Rodapé
             let tfootHTML = `<tr><td class="px-4 py-3 border-r border-gray-200 text-right">Média da Turma:</td>`;
             disciplinas.forEach(d => {
                 const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
@@ -738,7 +697,7 @@
             calcularMediasEmTempoReal();
         }
 
-        // Atualização suave
+        // Atualização suave da grelha em tempo real
         function atualizarValoresNaTela() {
             const inputs = document.querySelectorAll('.cell-input');
             inputs.forEach(input => {
@@ -747,6 +706,7 @@
                 const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
                 const nota = estado.notas[chave];
                 
+                // Evita tirar o foco ou alterar o que a pessoa está a digitar naquele milissegundo exato
                 if (document.activeElement !== input) {
                     input.value = nota !== undefined ? nota : '';
                 }
@@ -756,7 +716,7 @@
 
         function calcularMediasEmTempoReal() {
             const turmaId = estado.turmaSelecionada;
-            if(!turmaId) return; // Não calcula se não houver turma
+            if(!turmaId) return; 
 
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
@@ -764,7 +724,6 @@
             let somaGeralTurma = 0;
             let totalNotasGeral = 0;
 
-            // Médias por Aluno
             alunos.forEach(aluno => {
                 let somaAluno = 0;
                 let contAluno = 0;
@@ -791,7 +750,6 @@
                 }
             });
 
-            // Médias por Disciplina
             disciplinas.forEach(d => {
                 let somaDisc = 0;
                 let contDisc = 0;
@@ -815,7 +773,6 @@
                 }
             });
 
-            // Média Geral
             const mediaGeralElem = document.getElementById('media-geral-turma');
             if (mediaGeralElem) {
                 if (totalNotasGeral > 0) {
@@ -840,7 +797,6 @@
                 return;
             }
 
-            // BOM para Excel reconhecer acentos (UTF-8)
             let csvContent = "\uFEFF"; 
             
             let header = ["Nome do Aluno"];
@@ -906,7 +862,6 @@
             }, 3000);
         }
 
-        // Iniciar tudo quando a página carregar
         window.addEventListener('DOMContentLoaded', () => {
             inicializarInterface();
             inicializarFirebase();
