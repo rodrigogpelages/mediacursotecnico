@@ -48,6 +48,22 @@
         table { border-spacing: 0; }
         tbody tr { transition: background-color 0.2s ease; }
         tbody tr:hover { background-color: #f1f5f9 !important; }
+        
+        /* Custom scrollbar for modal */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col">
@@ -69,7 +85,7 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col gap-5">
+    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col gap-5 relative">
         
         <!-- Banner de Aviso -->
         <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-md shadow-sm flex items-start sm:items-center justify-between gap-4">
@@ -86,46 +102,50 @@
             </div>
         </div>
 
-        <!-- Controles: Seleção de Turma e Salvar -->
+        <!-- Controles: Seleção de Turma e Ações -->
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 relative z-20">
-            <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-2/3">
-                <div class="flex items-center gap-3 w-full sm:w-1/2">
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto flex-1">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
                     <label for="turma-select" class="font-bold text-slate-700 flex items-center gap-2">
                         <i class="fas fa-users text-blue-500"></i> Turma:
                     </label>
-                    <select id="turma-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-blue-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer">
+                    <select id="turma-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-blue-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer min-w-[150px]">
                         <!-- Opções injetadas via JS -->
                     </select>
                 </div>
-                <div class="flex items-center gap-3 w-full sm:w-1/2">
+                <div class="flex items-center gap-3 w-full sm:w-auto">
                     <label for="prof-select" class="font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">
                         <i class="fas fa-chalkboard-teacher text-purple-500"></i> Professor:
                     </label>
-                    <select id="prof-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-purple-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                    <select id="prof-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-purple-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]">
                         <option value="Todos">Todos</option>
                         <!-- Opções injetadas via JS -->
                     </select>
                 </div>
             </div>
             
-            <div class="flex items-center gap-3 w-full md:w-auto flex-col sm:flex-row">
-                <!-- Novo Input invisível para carregar arquivo e botão de Restaurar -->
-                <input type="file" id="input-importar" accept=".csv" class="hidden">
-                <button id="btn-importar" class="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Importar arquivo CSV">
-                    <i class="fas fa-file-upload"></i> Restaurar
+            <div class="flex items-center gap-3 w-full md:w-auto flex-wrap justify-end">
+                <button id="btn-historico" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Ver histórico de edições e restaurar backups">
+                    <i class="fas fa-history"></i> Histórico
                 </button>
                 
-                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                <input type="file" id="input-importar" accept=".csv" class="hidden">
+                <button id="btn-importar" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Importar arquivo CSV">
+                    <i class="fas fa-file-upload"></i> Restaurar CSV
+                </button>
+                
+                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fas fa-file-csv text-green-600"></i> Backup
                 </button>
-                <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                
+                <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Cria um ponto de restauração manual">
                     <i class="fas fa-save text-lg"></i> Salvar Alterações
                 </button>
             </div>
         </div>
 
         <!-- Área Dinâmica: Instruções ou Planilha -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col relative overflow-hidden">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col relative overflow-hidden min-h-[400px]">
             
             <!-- Inicia oculto com style="display: none;" para não bloquear a tela inicial -->
             <div id="loading-overlay" class="absolute inset-0 bg-white/90 z-30 flex items-center justify-center" style="display: none;">
@@ -136,7 +156,7 @@
             </div>
 
             <!-- Tela Inicial de Instruções -->
-            <div id="instructions-container" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+            <div id="instructions-container" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50 absolute inset-0 z-20">
                 <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
                     <i class="fas fa-chalkboard-teacher text-5xl text-blue-500"></i>
                 </div>
@@ -151,15 +171,15 @@
             </div>
 
             <!-- Planilha de Notas (Inicialmente Oculta) -->
-            <div id="table-container" class="overflow-x-auto flex-1 hidden pb-12">
+            <div id="table-container" class="overflow-auto flex-1 hidden w-full h-full absolute inset-0 z-10">
                 <table class="w-full text-sm text-left border-collapse min-w-[800px]">
-                    <thead id="table-head" class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10 shadow-sm">
+                    <thead id="table-head" class="text-xs text-slate-700 uppercase bg-slate-200 sticky top-0 z-40 shadow-sm">
                         <!-- Cabeçalho injetado via JS -->
                     </thead>
-                    <tbody id="table-body" class="divide-y divide-gray-200">
+                    <tbody id="table-body" class="divide-y divide-slate-200">
                         <!-- Linhas injetadas via JS -->
                     </tbody>
-                    <tfoot id="table-foot" class="bg-gray-50 sticky bottom-0 border-t-2 border-gray-300 z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                    <tfoot id="table-foot" class="bg-slate-50 border-t-4 border-slate-300">
                         <!-- Rodapé injetado via JS -->
                     </tfoot>
                 </table>
@@ -168,6 +188,29 @@
         </div>
 
     </main>
+
+    <!-- Modal de Histórico de Versões -->
+    <div id="modal-historico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="modal-historico-content">
+            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-history text-indigo-600"></i> Histórico de Versões (Backup Extra)
+                    </h3>
+                    <p class="text-xs text-slate-500 mt-1">Visualize as atualizações automáticas e restaure caso algo seja apagado.</p>
+                </div>
+                <button onclick="window.fecharModalHistorico()" class="text-slate-400 hover:text-red-500 transition-colors p-2 text-xl outline-none">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50 custom-scrollbar" id="lista-historico">
+                <!-- Injetado via JS -->
+            </div>
+            <div class="px-6 py-4 border-t border-slate-200 bg-white flex justify-end">
+                <button onclick="window.fecharModalHistorico()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors border border-slate-300">Fechar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Notification Normal -->
     <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
@@ -179,7 +222,7 @@
     <div id="toast-desfazer" class="fixed bottom-4 right-4 bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl transform translate-y-32 opacity-0 transition-all duration-300 flex items-center gap-4 z-50 border border-slate-600">
         <div class="flex items-center gap-2">
             <i class="fas fa-info-circle text-blue-400 text-lg"></i>
-            <span id="toast-desfazer-msg" class="font-medium">Ação realizada</span>
+            <span id="toast-desfazer-msg" class="font-medium text-sm sm:text-base">Ação realizada</span>
         </div>
         <div class="h-6 border-l border-slate-600 mx-1"></div>
         <button onclick="window.executarDesfazer()" class="bg-slate-700 hover:bg-slate-600 text-amber-400 border border-slate-500 px-3 py-1.5 rounded text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-sm">
@@ -373,7 +416,8 @@
         let estado = {
             turmaSelecionada: '', 
             professorSelecionado: 'Todos',
-            notas: {} 
+            notas: {},
+            historico: [] // Array para guardar as versões
         };
 
         const CORES_PROFESSORES = {
@@ -385,7 +429,7 @@
             'Profª Lorena': 'bg-teal-100'
         };
 
-        // Estado Global para Desfazer (Undo)
+        // Estado Global para Desfazer (Undo Rápido)
         let estadoDesfazer = null;
         let timerDesfazer = null;
 
@@ -466,8 +510,10 @@
                 if (docSnap.exists()) {
                     // Substitui os dados locais pelo banco de dados sempre atualizado
                     estado.notas = docSnap.data().notas || {};
+                    estado.historico = docSnap.data().historico || [];
                 } else {
                     estado.notas = {};
+                    estado.historico = [];
                 }
                 
                 document.getElementById('loading-overlay').style.display = 'none';
@@ -524,7 +570,40 @@
             }
         }
 
-        // O botão de salvar massivo agora serve mais como precaução/garantia
+        // Sistema de Versionamento Inteligente (Histórico)
+        window.registrarNoHistorico = async function(descricao) {
+            if (!userId) return;
+            
+            const qtdNotas = Object.keys(estado.notas).length;
+            const snapshot = {
+                id: Date.now().toString(),
+                data: new Date().toLocaleString('pt-BR'),
+                descricao: descricao,
+                qtdNotas: qtdNotas,
+                notas: JSON.parse(JSON.stringify(estado.notas)) // Cópia profunda segura das notas
+            };
+            
+            if (!estado.historico) estado.historico = [];
+            
+            // Evita salvar um histórico idêntico ao último se não houver mudanças nas notas
+            if (estado.historico.length > 0) {
+                const ultimo = estado.historico[0];
+                if (JSON.stringify(ultimo.notas) === JSON.stringify(snapshot.notas) && ultimo.descricao === descricao) {
+                    return; 
+                }
+            }
+
+            estado.historico.unshift(snapshot); // Adiciona no início da lista
+            if (estado.historico.length > 25) estado.historico.pop(); // Mantém apenas as últimas 25 versões
+
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
+            
+            // Salva apenas o array de histórico no banco
+            await setDoc(docRef, { historico: estado.historico }, { merge: true });
+        };
+
+        // O botão de salvar massivo agora serve mais como precaução e gera um ponto de restauração manual
         async function salvarDadosNoBanco(mostrarAviso = false) {
             if (!userId) return;
             if (isSaving && mostrarAviso) return;
@@ -547,7 +626,12 @@
                 await Promise.race([operacaoSalvar, timeout]);
                 
                 atualizarStatusNuvem(true, "Salvo na nuvem");
-                if(mostrarAviso) mostrarToast();
+                
+                // Cria um ponto de histórico apenas se foi um clique manual
+                if (mostrarAviso) {
+                    await window.registrarNoHistorico(`Ponto de Restauração (Salvo Manualmente)`);
+                    mostrarToast();
+                }
             } catch (erro) {
                 console.error("Erro ao salvar tudo:", erro);
                 atualizarStatusNuvem(false, "Erro ao salvar");
@@ -562,10 +646,107 @@
         }
 
         // ============================================================================
+        // Auto-Backup Silencioso
+        // ============================================================================
+        // A cada 10 minutos (600000 ms), o sistema verifica se houveram mudanças e salva no histórico
+        setInterval(async () => {
+            if (!userId || !estado.historico) return;
+            
+            const notasAtuaisStr = JSON.stringify(estado.notas);
+            const ultimasNotasStr = estado.historico.length > 0 ? JSON.stringify(estado.historico[0].notas) : "{}";
+            
+            if (notasAtuaisStr !== ultimasNotasStr) {
+                await window.registrarNoHistorico("Auto-backup de segurança (Sistema)");
+            }
+        }, 600000);
+
+        // ============================================================================
         // 3. LÓGICA DE INTERFACE, AÇÕES RÁPIDAS E DESFAZER
         // ============================================================================
 
-        // Sistema de Desfazer (Undo)
+        // Janela Modal do Histórico
+        window.abrirModalHistorico = function() {
+            const modal = document.getElementById('modal-historico');
+            const content = document.getElementById('modal-historico-content');
+            const lista = document.getElementById('lista-historico');
+
+            lista.innerHTML = '';
+            if (!estado.historico || estado.historico.length === 0) {
+                lista.innerHTML = `
+                    <div class="text-center text-slate-500 py-12 flex flex-col items-center">
+                        <div class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
+                            <i class="fas fa-history text-3xl text-slate-400"></i>
+                        </div>
+                        <p class="font-medium text-lg text-slate-600">Nenhum ponto de restauração encontrado.</p>
+                        <p class="text-sm mt-2 max-w-md">O sistema criará versões automaticamente a cada 10 minutos ou quando preencher colunas, restaurar backups ou clicar em "Salvar Alterações".</p>
+                    </div>`;
+            } else {
+                estado.historico.forEach(versao => {
+                    const qtd = versao.qtdNotas !== undefined ? versao.qtdNotas : Object.keys(versao.notas).length;
+                    lista.innerHTML += `
+                        <div class="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-indigo-300 transition-colors">
+                            <div>
+                                <h4 class="font-bold text-slate-800 text-lg">${versao.descricao}</h4>
+                                <p class="text-sm text-slate-500 mt-1"><i class="far fa-clock mr-1"></i> Salvo em: ${versao.data}</p>
+                                <p class="text-xs text-indigo-600 font-semibold mt-1 bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i class="fas fa-database mr-1"></i> ${qtd} notas salvas nesta versão</p>
+                            </div>
+                            <button onclick="window.restaurarVersaoHistorico('${versao.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all active:scale-95 whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm">
+                                <i class="fas fa-undo-alt"></i> Restaurar
+                            </button>
+                        </div>
+                    `;
+                });
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            setTimeout(() => {
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        };
+
+        window.fecharModalHistorico = function() {
+            const modal = document.getElementById('modal-historico');
+            const content = document.getElementById('modal-historico-content');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            setTimeout(() => {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }, 300);
+        };
+
+        // Função para aplicar uma versão antiga
+        window.restaurarVersaoHistorico = async function(id) {
+            const versao = estado.historico.find(v => v.id === id);
+            if (!versao) return;
+
+            if (!confirm(`Deseja realmente restaurar a planilha para o estado de: ${versao.data}?\nIsso substituirá as notas atuais na tela.`)) return;
+
+            window.fecharModalHistorico();
+            document.getElementById('loading-overlay').style.display = 'flex';
+
+            // Cria um backup de segurança do estado atual ANTES de aplicar o antigo
+            await window.registrarNoHistorico(`Backup automático antes de restaurar a versão de ${versao.data}`);
+
+            // Aplica a versão
+            estado.notas = JSON.parse(JSON.stringify(versao.notas));
+            renderizarPlanilha();
+
+            // Salva na nuvem
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
+            await setDoc(docRef, { notas: estado.notas }, { merge: true });
+
+            document.getElementById('loading-overlay').style.display = 'none';
+            const toast = document.getElementById('toast-message');
+            toast.textContent = "Versão restaurada com sucesso!";
+            mostrarToast();
+            setTimeout(() => toast.textContent = "Notas salvas com sucesso!", 3500); // Reseta
+        };
+
+        // Sistema de Desfazer Rápido (Undo do balãozinho)
         window.salvarEstadoDesfazer = function(notasOriginais, mensagem) {
             estadoDesfazer = notasOriginais;
             const toastInfo = document.getElementById('toast-desfazer');
@@ -610,7 +791,7 @@
             const toast = document.getElementById('toast-message');
             toast.textContent = "Ação desfeita com sucesso!";
             mostrarToast();
-            toast.textContent = "Notas salvas com sucesso!"; // Reseta texto
+            setTimeout(() => toast.textContent = "Notas salvas com sucesso!", 3500);
         };
 
         // Ação de Preencher Coluna
@@ -629,6 +810,9 @@
             if (!confirm(`Deseja preencher TODOS os alunos desta coluna com a nota ${valor}?`)) return;
 
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
+            const discNome = disciplinas.find(d => d.id === discId)?.nome || "Desconhecida";
+
             let notasOriginais = {};
             let payload = { notas: {} };
 
@@ -644,6 +828,10 @@
             window.salvarEstadoDesfazer(notasOriginais, `Coluna preenchida com a nota ${valor}`);
             renderizarPlanilha(); 
             salvarBatchNoBanco(payload); 
+            
+            // Regista a versão no histórico do Firebase
+            await window.registrarNoHistorico(`Preencheu coluna: ${discNome} com nota ${valor}`);
+            
             input.value = ''; 
         };
 
@@ -655,6 +843,9 @@
             if (!confirm("ATENÇÃO: Tem certeza que deseja APAGAR TODAS as notas desta coluna?")) return;
 
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
+            const discNome = disciplinas.find(d => d.id === discId)?.nome || "Desconhecida";
+
             let notasOriginais = {};
             let payload = { notas: {} };
             let temNotaParaApagar = false;
@@ -677,6 +868,9 @@
             window.salvarEstadoDesfazer(notasOriginais, "As notas da coluna foram apagadas.");
             renderizarPlanilha();
             salvarBatchNoBanco(payload);
+
+            // Regista a versão no histórico do Firebase
+            await window.registrarNoHistorico(`Apagou notas da coluna: ${discNome}`);
         };
 
 
@@ -697,6 +891,7 @@
                 document.getElementById('btn-importar').disabled = false;
                 document.getElementById('btn-exportar').disabled = false;
                 document.getElementById('btn-salvar').disabled = false;
+                document.getElementById('btn-historico').disabled = false;
             });
 
             const profSeletor = document.getElementById('prof-select');
@@ -708,11 +903,14 @@
             document.getElementById('btn-salvar').addEventListener('click', () => {
                 salvarDadosNoBanco(true);
             });
+            
+            document.getElementById('btn-historico').addEventListener('click', window.abrirModalHistorico);
 
             atualizarSeletorProfessor();
             document.getElementById('btn-importar').disabled = true;
             document.getElementById('btn-exportar').disabled = true;
             document.getElementById('btn-salvar').disabled = true;
+            document.getElementById('btn-historico').disabled = true;
             
             document.getElementById('btn-exportar').addEventListener('click', exportarParaCSV);
 
@@ -817,25 +1015,25 @@
 
             // 1. Cabeçalho
             let theadHTML = `<tr>
-                <th scope="col" class="px-4 py-3 border-r border-gray-200 bg-gray-100 min-w-[200px]">Nome do Aluno</th>`;
+                <th scope="col" class="px-4 py-3 border-r border-slate-300 bg-slate-200 min-w-[250px] sticky left-0 z-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nome do Aluno</th>`;
             
             disciplinas.forEach(d => {
                 const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
                 const corFundoTh = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
                 
-                theadHTML += `<th scope="col" class="px-2 py-3 border-r border-gray-200 text-center w-32 transition-colors duration-300 ${corFundoTh}">
-                    <div class="font-bold text-gray-800">${d.nome}</div>
-                    <div class="text-[10px] font-semibold text-gray-600 truncate bg-white/50 rounded mt-1 px-1 py-0.5" title="${d.professor}">${d.professor}</div>
+                theadHTML += `<th scope="col" class="px-2 py-3 border-r border-slate-200 text-center w-32 transition-colors duration-300 ${corFundoTh}">
+                    <div class="font-bold text-slate-800">${d.nome}</div>
+                    <div class="text-[10px] font-semibold text-slate-600 truncate bg-white/50 rounded mt-1 px-1 py-0.5" title="${d.professor}">${d.professor}</div>
                 </th>`;
             });
-            theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold">Média do Aluno</th></tr>`;
+            theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold border-l border-blue-200">Média do Aluno</th></tr>`;
             document.getElementById('table-head').innerHTML = theadHTML;
 
             // 2. Corpo
             let tbodyHTML = '';
             alunos.forEach(aluno => {
-                tbodyHTML += `<tr class="hover:bg-blue-50/50 transition-colors">
-                    <td class="px-4 py-2 border-r border-gray-200 font-medium">${aluno.nome}</td>`;
+                tbodyHTML += `<tr class="hover:bg-blue-50 transition-colors group">
+                    <td class="px-4 py-2 border-r border-slate-200 font-medium sticky left-0 bg-white group-hover:bg-blue-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${aluno.nome}</td>`;
                 
                 disciplinas.forEach(d => {
                     const chave = `${turmaId}_${aluno.id}_${d.id}`;
@@ -844,7 +1042,7 @@
                     const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
                     const corFundoTd = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
                     
-                    tbodyHTML += `<td class="border-r border-gray-200 p-0 transition-colors duration-300 ${corFundoTd}">
+                    tbodyHTML += `<td class="border-r border-slate-200 p-0 transition-colors duration-300 ${corFundoTd}">
                         <input type="number" 
                                class="cell-input" 
                                min="1" max="6" step="0.5"
@@ -855,32 +1053,32 @@
                     </td>`;
                 });
                 
-                tbodyHTML += `<td class="px-4 py-2 bg-blue-50/30 text-center font-bold text-blue-800 border-l border-blue-100" id="media-aluno-${aluno.id}">-</td></tr>`;
+                tbodyHTML += `<td class="px-4 py-2 bg-blue-50/30 text-center font-bold text-blue-800 border-l border-blue-200" id="media-aluno-${aluno.id}">-</td></tr>`;
             });
             
             if(alunos.length === 0) {
-                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-gray-500">Nenhum aluno registrado nesta turma.</td></tr>`;
+                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-slate-500">Nenhum aluno registrado nesta turma.</td></tr>`;
             }
             
             document.getElementById('table-body').innerHTML = tbodyHTML;
 
             // 3. Rodapé (Média e Ações Rápidas)
-            let tfootHTML = `<tr><td class="px-4 py-3 border-r border-gray-200 text-right font-bold text-slate-700">Média da Turma:</td>`;
+            let tfootHTML = `<tr><td class="px-4 py-3 border-r border-slate-300 text-right font-bold text-slate-700 sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Média da Turma:</td>`;
             disciplinas.forEach(d => {
                 const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
                 const corFundoTf = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
                 
-                tfootHTML += `<td class="px-4 py-3 border-r border-gray-200 text-center font-bold text-blue-700 transition-colors duration-300 ${corFundoTf}" id="media-disc-${d.id}">-</td>`;
+                tfootHTML += `<td class="px-4 py-3 border-r border-slate-200 text-center font-bold text-blue-700 transition-colors duration-300 ${corFundoTf}" id="media-disc-${d.id}">-</td>`;
             });
-            tfootHTML += `<td class="px-4 py-3 bg-blue-100 text-blue-900 text-center font-bold" id="media-geral-turma">-</td></tr>`;
+            tfootHTML += `<td class="px-4 py-3 bg-blue-100 text-blue-900 text-center font-bold border-l border-blue-200" id="media-geral-turma">-</td></tr>`;
 
             // Linha de Ações na Coluna
             tfootHTML += `<tr class="bg-slate-100 border-t-2 border-slate-200">
-                <td class="px-4 py-4 border-r border-gray-200 text-right text-xs font-bold text-slate-500 uppercase tracking-wider align-middle">
+                <td class="px-4 py-4 border-r border-slate-300 text-right text-xs font-bold text-slate-500 uppercase tracking-wider align-middle sticky left-0 bg-slate-100 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                     Ações Rápidas:
                 </td>`;
             disciplinas.forEach(d => {
-                tfootHTML += `<td class="px-2 py-3 border-r border-gray-200 text-center align-middle">
+                tfootHTML += `<td class="px-2 py-3 border-r border-slate-200 text-center align-middle">
                     <div class="flex flex-col gap-2 items-center justify-center">
                         <div class="flex items-center w-full max-w-[110px] bg-white border border-gray-300 rounded shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden">
                             <input type="number" id="input-repeat-${d.id}" min="1" max="6" step="0.5" class="w-full text-center text-sm py-1.5 outline-none font-medium text-slate-700" placeholder="Nota">
@@ -1047,7 +1245,7 @@
         }
 
         // Função para processar o CSV importado e restaurar os dados
-        function processarCSVImportacao(csvText) {
+        async function processarCSVImportacao(csvText) {
             const turmaId = estado.turmaSelecionada;
             if (!turmaId) {
                 alert("Selecione uma turma antes de importar os dados.");
@@ -1122,6 +1320,7 @@
                 window.salvarEstadoDesfazer(notasOriginais, "Backup importado e restaurado.");
                 renderizarPlanilha();
                 salvarBatchNoBanco(payload);
+                await window.registrarNoHistorico(`Restaurou Backup a partir de arquivo CSV`);
                 alert("Backup restaurado com sucesso! Os dados foram enviados para a nuvem.");
             } else {
                 alert("Nenhuma nota diferente foi encontrada no arquivo para a turma selecionada (Tudo já está igual).");
