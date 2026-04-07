@@ -109,8 +109,14 @@
             </div>
             
             <div class="flex items-center gap-3 w-full md:w-auto flex-col sm:flex-row">
-                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-5 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-file-csv text-green-600"></i> Baixar Backup
+                <!-- Novo Input invisível para carregar arquivo e botão de Restaurar -->
+                <input type="file" id="input-importar" accept=".csv" class="hidden">
+                <button id="btn-importar" class="bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-300 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Importar arquivo CSV">
+                    <i class="fas fa-file-upload"></i> Restaurar
+                </button>
+                
+                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-file-csv text-green-600"></i> Backup
                 </button>
                 <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
                     <i class="fas fa-save text-lg"></i> Salvar Alterações
@@ -145,7 +151,7 @@
             </div>
 
             <!-- Planilha de Notas (Inicialmente Oculta) -->
-            <div id="table-container" class="overflow-x-auto flex-1 hidden">
+            <div id="table-container" class="overflow-x-auto flex-1 hidden pb-12">
                 <table class="w-full text-sm text-left border-collapse min-w-[800px]">
                     <thead id="table-head" class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10 shadow-sm">
                         <!-- Cabeçalho injetado via JS -->
@@ -153,7 +159,7 @@
                     <tbody id="table-body" class="divide-y divide-gray-200">
                         <!-- Linhas injetadas via JS -->
                     </tbody>
-                    <tfoot id="table-foot" class="bg-gray-50 font-semibold text-gray-800 sticky bottom-0 border-t-2 border-gray-300 z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+                    <tfoot id="table-foot" class="bg-gray-50 sticky bottom-0 border-t-2 border-gray-300 z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
                         <!-- Rodapé injetado via JS -->
                     </tfoot>
                 </table>
@@ -163,10 +169,25 @@
 
     </main>
 
-    <!-- Toast Notification -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+    <!-- Toast Notification Normal -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
         <i class="fas fa-check-circle"></i>
         <span id="toast-message">Notas salvas com sucesso!</span>
+    </div>
+
+    <!-- Toast de Desfazer (Undo) -->
+    <div id="toast-desfazer" class="fixed bottom-4 right-4 bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl transform translate-y-32 opacity-0 transition-all duration-300 flex items-center gap-4 z-50 border border-slate-600">
+        <div class="flex items-center gap-2">
+            <i class="fas fa-info-circle text-blue-400 text-lg"></i>
+            <span id="toast-desfazer-msg" class="font-medium">Ação realizada</span>
+        </div>
+        <div class="h-6 border-l border-slate-600 mx-1"></div>
+        <button onclick="window.executarDesfazer()" class="bg-slate-700 hover:bg-slate-600 text-amber-400 border border-slate-500 px-3 py-1.5 rounded text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-sm">
+            <i class="fas fa-undo"></i> Desfazer
+        </button>
+        <button onclick="window.esconderToastDesfazer()" class="text-slate-400 hover:text-white ml-1 transition-colors p-1" title="Fechar">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 
     <!-- Firebase Scripts -->
@@ -364,6 +385,10 @@
             'Profª Lorena': 'bg-teal-100'
         };
 
+        // Estado Global para Desfazer (Undo)
+        let estadoDesfazer = null;
+        let timerDesfazer = null;
+
         // ============================================================================
         // 2. CONFIGURAÇÃO DO FIREBASE (BANCO DE DADOS EM NUVEM)
         // ============================================================================
@@ -482,6 +507,23 @@
             }
         }
 
+        // Função para salvar em lote (várias células ao mesmo tempo) - Usado no preencher/limpar coluna
+        async function salvarBatchNoBanco(payload) {
+            if (!userId) return;
+            atualizarStatusNuvem(true, "Salvando lote...");
+            
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
+            
+            try {
+                await setDoc(docRef, payload, { merge: true });
+                atualizarStatusNuvem(true, "Salvo na nuvem");
+            } catch (erro) {
+                console.error("Erro ao salvar lote:", erro);
+                atualizarStatusNuvem(false, "Erro ao salvar");
+            }
+        }
+
         // O botão de salvar massivo agora serve mais como precaução/garantia
         async function salvarDadosNoBanco(mostrarAviso = false) {
             if (!userId) return;
@@ -520,8 +562,123 @@
         }
 
         // ============================================================================
-        // 3. LÓGICA DE INTERFACE E PLANILHA (HTML/DOM)
+        // 3. LÓGICA DE INTERFACE, AÇÕES RÁPIDAS E DESFAZER
         // ============================================================================
+
+        // Sistema de Desfazer (Undo)
+        window.salvarEstadoDesfazer = function(notasOriginais, mensagem) {
+            estadoDesfazer = notasOriginais;
+            const toastInfo = document.getElementById('toast-desfazer');
+            const toastMsg = document.getElementById('toast-desfazer-msg');
+            
+            toastMsg.textContent = mensagem;
+            toastInfo.classList.remove('translate-y-32', 'opacity-0');
+            
+            clearTimeout(timerDesfazer);
+            timerDesfazer = setTimeout(() => {
+                window.esconderToastDesfazer();
+            }, 10000); // Exibe o botão Desfazer por 10 segundos
+        };
+
+        window.esconderToastDesfazer = function() {
+            const toastInfo = document.getElementById('toast-desfazer');
+            toastInfo.classList.add('translate-y-32', 'opacity-0');
+            estadoDesfazer = null; 
+        };
+
+        window.executarDesfazer = async function() {
+            if (!estadoDesfazer) return;
+
+            let payload = { notas: {} };
+            
+            // Restaura os valores antigos no estado local e prepara o payload pro Firebase
+            for (const chave in estadoDesfazer) {
+                const valorAntigo = estadoDesfazer[chave];
+                if (valorAntigo === null) {
+                    delete estado.notas[chave];
+                    payload.notas[chave] = deleteField();
+                } else {
+                    estado.notas[chave] = valorAntigo;
+                    payload.notas[chave] = valorAntigo;
+                }
+            }
+
+            window.esconderToastDesfazer();
+            renderizarPlanilha();
+            salvarBatchNoBanco(payload);
+            
+            const toast = document.getElementById('toast-message');
+            toast.textContent = "Ação desfeita com sucesso!";
+            mostrarToast();
+            toast.textContent = "Notas salvas com sucesso!"; // Reseta texto
+        };
+
+        // Ação de Preencher Coluna
+        window.preencherColuna = async function(discId) {
+            const turmaId = estado.turmaSelecionada;
+            if (!turmaId) return;
+
+            const input = document.getElementById(`input-repeat-${discId}`);
+            let valor = parseFloat(input.value);
+            
+            if (isNaN(valor) || valor < 1 || valor > 6) {
+                alert("Por favor, digite uma nota válida entre 1 e 6 no campo abaixo da coluna para repeti-la.");
+                return;
+            }
+
+            if (!confirm(`Deseja preencher TODOS os alunos desta coluna com a nota ${valor}?`)) return;
+
+            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            let notasOriginais = {};
+            let payload = { notas: {} };
+
+            alunos.forEach(aluno => {
+                const chave = `${turmaId}_${aluno.id}_${discId}`;
+                // Salva o que estava lá antes para o Desfazer (pode ser null se estava vazio)
+                notasOriginais[chave] = estado.notas[chave] !== undefined ? estado.notas[chave] : null;
+
+                estado.notas[chave] = valor;
+                payload.notas[chave] = valor;
+            });
+
+            window.salvarEstadoDesfazer(notasOriginais, `Coluna preenchida com a nota ${valor}`);
+            renderizarPlanilha(); 
+            salvarBatchNoBanco(payload); 
+            input.value = ''; 
+        };
+
+        // Ação de Limpar Coluna
+        window.limparColuna = async function(discId) {
+            const turmaId = estado.turmaSelecionada;
+            if (!turmaId) return;
+
+            if (!confirm("ATENÇÃO: Tem certeza que deseja APAGAR TODAS as notas desta coluna?")) return;
+
+            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            let notasOriginais = {};
+            let payload = { notas: {} };
+            let temNotaParaApagar = false;
+
+            alunos.forEach(aluno => {
+                const chave = `${turmaId}_${aluno.id}_${discId}`;
+                if (estado.notas[chave] !== undefined) {
+                    notasOriginais[chave] = estado.notas[chave];
+                    delete estado.notas[chave];
+                    payload.notas[chave] = deleteField();
+                    temNotaParaApagar = true;
+                }
+            });
+
+            if (!temNotaParaApagar) {
+                alert("Esta coluna já está totalmente vazia.");
+                return;
+            }
+
+            window.salvarEstadoDesfazer(notasOriginais, "As notas da coluna foram apagadas.");
+            renderizarPlanilha();
+            salvarBatchNoBanco(payload);
+        };
+
 
         function inicializarInterface() {
             Object.keys(DADOS_ESCOLA.disciplinas).forEach(turmaId => {
@@ -537,6 +694,7 @@
                 estado.turmaSelecionada = e.target.value;
                 atualizarSeletorProfessor();
                 renderizarPlanilha();
+                document.getElementById('btn-importar').disabled = false;
                 document.getElementById('btn-exportar').disabled = false;
                 document.getElementById('btn-salvar').disabled = false;
             });
@@ -552,9 +710,29 @@
             });
 
             atualizarSeletorProfessor();
+            document.getElementById('btn-importar').disabled = true;
             document.getElementById('btn-exportar').disabled = true;
             document.getElementById('btn-salvar').disabled = true;
+            
             document.getElementById('btn-exportar').addEventListener('click', exportarParaCSV);
+
+            // Novos Eventos para Importação de Backup
+            document.getElementById('btn-importar').addEventListener('click', () => {
+                document.getElementById('input-importar').click();
+            });
+
+            document.getElementById('input-importar').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const text = event.target.result;
+                    processarCSVImportacao(text);
+                    e.target.value = ''; // Limpa o input para poder importar o mesmo arquivo novamente se precisar
+                };
+                reader.readAsText(file, 'UTF-8');
+            });
 
             document.getElementById('table-body').addEventListener('input', (e) => {
                 if(e.target.classList.contains('cell-input')) {
@@ -637,6 +815,7 @@
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
 
+            // 1. Cabeçalho
             let theadHTML = `<tr>
                 <th scope="col" class="px-4 py-3 border-r border-gray-200 bg-gray-100 min-w-[200px]">Nome do Aluno</th>`;
             
@@ -652,6 +831,7 @@
             theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold">Média do Aluno</th></tr>`;
             document.getElementById('table-head').innerHTML = theadHTML;
 
+            // 2. Corpo
             let tbodyHTML = '';
             alunos.forEach(aluno => {
                 tbodyHTML += `<tr class="hover:bg-blue-50/50 transition-colors">
@@ -684,14 +864,38 @@
             
             document.getElementById('table-body').innerHTML = tbodyHTML;
 
-            let tfootHTML = `<tr><td class="px-4 py-3 border-r border-gray-200 text-right">Média da Turma:</td>`;
+            // 3. Rodapé (Média e Ações Rápidas)
+            let tfootHTML = `<tr><td class="px-4 py-3 border-r border-gray-200 text-right font-bold text-slate-700">Média da Turma:</td>`;
             disciplinas.forEach(d => {
                 const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
                 const corFundoTf = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
                 
                 tfootHTML += `<td class="px-4 py-3 border-r border-gray-200 text-center font-bold text-blue-700 transition-colors duration-300 ${corFundoTf}" id="media-disc-${d.id}">-</td>`;
             });
-            tfootHTML += `<td class="px-4 py-3 bg-blue-100 text-blue-900 text-center" id="media-geral-turma">-</td></tr>`;
+            tfootHTML += `<td class="px-4 py-3 bg-blue-100 text-blue-900 text-center font-bold" id="media-geral-turma">-</td></tr>`;
+
+            // Linha de Ações na Coluna
+            tfootHTML += `<tr class="bg-slate-100 border-t-2 border-slate-200">
+                <td class="px-4 py-4 border-r border-gray-200 text-right text-xs font-bold text-slate-500 uppercase tracking-wider align-middle">
+                    Ações Rápidas:
+                </td>`;
+            disciplinas.forEach(d => {
+                tfootHTML += `<td class="px-2 py-3 border-r border-gray-200 text-center align-middle">
+                    <div class="flex flex-col gap-2 items-center justify-center">
+                        <div class="flex items-center w-full max-w-[110px] bg-white border border-gray-300 rounded shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden">
+                            <input type="number" id="input-repeat-${d.id}" min="1" max="6" step="0.5" class="w-full text-center text-sm py-1.5 outline-none font-medium text-slate-700" placeholder="Nota">
+                            <button onclick="window.preencherColuna('${d.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 border-l border-gray-300 transition-colors" title="Repetir nota em toda a coluna">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        </div>
+                        <button onclick="window.limparColuna('${d.id}')" class="text-[11px] text-red-500 hover:text-red-700 font-semibold transition-colors flex items-center justify-center gap-1 bg-red-50 hover:bg-red-100 px-2 py-1 rounded w-full max-w-[110px]">
+                            <i class="fas fa-trash-alt"></i> Limpar
+                        </button>
+                    </div>
+                </td>`;
+            });
+            tfootHTML += `<td class="bg-slate-100 border-l border-slate-200"></td></tr>`;
+
             document.getElementById('table-foot').innerHTML = tfootHTML;
 
             calcularMediasEmTempoReal();
@@ -842,6 +1046,88 @@
             document.body.removeChild(link);
         }
 
+        // Função para processar o CSV importado e restaurar os dados
+        function processarCSVImportacao(csvText) {
+            const turmaId = estado.turmaSelecionada;
+            if (!turmaId) {
+                alert("Selecione uma turma antes de importar os dados.");
+                return;
+            }
+
+            // Remove caracteres especiais de BOM e divide por linhas
+            const linhas = csvText.replace(/^\uFEFF/, '').split('\n').map(l => l.trim()).filter(l => l !== '');
+            if (linhas.length < 2) {
+                alert("O arquivo está vazio ou no formato incorreto.");
+                return;
+            }
+
+            const header = linhas[0].split(';');
+            const alunosTurma = DADOS_ESCOLA.alunos[turmaId] || [];
+            const disciplinasTurma = DADOS_ESCOLA.disciplinas[turmaId] || [];
+
+            // Mapeia os índices das colunas no CSV para as disciplinas da turma selecionada
+            const mapaDisciplinas = {};
+            for (let i = 1; i < header.length - 1; i++) {
+                const nomeDisc = header[i];
+                const disc = disciplinasTurma.find(d => d.nome === nomeDisc);
+                if (disc) {
+                    mapaDisciplinas[i] = disc.id;
+                }
+            }
+
+            let payload = { notas: {} };
+            let notasOriginais = {};
+            let alteracoesCount = 0;
+
+            for (let i = 1; i < linhas.length; i++) {
+                const colunas = linhas[i].split(';');
+                const nomeAluno = colunas[0];
+                
+                const aluno = alunosTurma.find(a => a.nome === nomeAluno);
+                if (!aluno) continue; // Pula alunos que não são desta turma
+
+                for (let j = 1; j < colunas.length - 1; j++) {
+                    const discId = mapaDisciplinas[j];
+                    if (!discId) continue;
+
+                    const valorStr = colunas[j].trim();
+                    let valorNum = null;
+                    if (valorStr !== "") {
+                        valorNum = parseFloat(valorStr.replace(',', '.')); // Aceita vírgula ou ponto
+                    }
+
+                    const chave = `${turmaId}_${aluno.id}_${discId}`;
+                    notasOriginais[chave] = estado.notas[chave] !== undefined ? estado.notas[chave] : null;
+
+                    // Verifica se o valor sofreu alguma alteração real (evita gravar dados desnecessários)
+                    const notaAtual = estado.notas[chave] !== undefined ? estado.notas[chave] : null;
+
+                    if (valorNum !== null && !isNaN(valorNum) && valorNum >= 1 && valorNum <= 6) {
+                        if (notaAtual !== valorNum) {
+                            estado.notas[chave] = valorNum;
+                            payload.notas[chave] = valorNum;
+                            alteracoesCount++;
+                        }
+                    } else if (valorStr === "") {
+                        if (notaAtual !== null) {
+                            delete estado.notas[chave];
+                            payload.notas[chave] = deleteField();
+                            alteracoesCount++;
+                        }
+                    }
+                }
+            }
+
+            if (alteracoesCount > 0) {
+                window.salvarEstadoDesfazer(notasOriginais, "Backup importado e restaurado.");
+                renderizarPlanilha();
+                salvarBatchNoBanco(payload);
+                alert("Backup restaurado com sucesso! Os dados foram enviados para a nuvem.");
+            } else {
+                alert("Nenhuma nota diferente foi encontrada no arquivo para a turma selecionada (Tudo já está igual).");
+            }
+        }
+
         function atualizarStatusNuvem(ok, texto) {
             const icone = document.getElementById('cloud-icon');
             const spanText = document.getElementById('cloud-text');
@@ -856,9 +1142,9 @@
 
         function mostrarToast() {
             const toast = document.getElementById('toast');
-            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.remove('translate-y-24', 'opacity-0');
             setTimeout(() => {
-                toast.classList.add('translate-y-20', 'opacity-0');
+                toast.classList.add('translate-y-24', 'opacity-0');
             }, 3000);
         }
 
