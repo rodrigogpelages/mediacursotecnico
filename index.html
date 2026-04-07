@@ -454,7 +454,9 @@
             if (!userId) return;
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'registros_diarios', 'notas_gerais');
+            
+            // ATUALIZAÇÃO: Caminho PARTILHADO. Todos os navegadores/utilizadores vão aceder a este ficheiro público comum!
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
@@ -504,7 +506,9 @@
             }
 
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'registros_diarios', 'notas_gerais');
+            
+            // ATUALIZAÇÃO: Caminho PARTILHADO. Guarda as alterações no ficheiro comum!
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
             
             try {
                 // Configuração de temporizador (timeout) de 8 segundos:
