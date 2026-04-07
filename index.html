@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Média de Área de Conhecimento</title>
+    <title>Média de Área de Conhecimento - IPI e GTU</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos adicionais para a tabela parecer uma folha de cálculo */
+        /* Estilos adicionais para a tabela parecer uma planilha */
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -53,18 +53,18 @@
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col">
 
     <!-- Hack para o Tailwind CDN carregar as cores dinâmicas no GitHub Pages -->
-    <div class="hidden bg-pink-100 bg-sky-100 bg-emerald-100 bg-amber-100 bg-violet-100 bg-teal-100 bg-yellow-200 text-gray-800 text-gray-600 bg-white/50 border-r border-gray-200"></div>
+    <div class="hidden bg-pink-100 bg-sky-100 bg-emerald-100 bg-amber-100 bg-violet-100 bg-teal-100 bg-yellow-200 text-gray-800 text-gray-600 bg-white/50 border-r border-gray-200 from-blue-700 to-blue-500 from-purple-700 to-purple-500 from-indigo-700 to-indigo-500 from-teal-700 to-teal-500 from-emerald-700 to-emerald-500 from-rose-700 to-rose-500 from-orange-600 to-orange-400"></div>
 
     <!-- Header -->
-    <header class="bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg p-4 flex justify-between items-center relative overflow-hidden">
+    <header id="main-header" class="bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg p-4 flex justify-between items-center relative overflow-hidden">
         <div class="absolute inset-0 bg-white/10 rotate-12 scale-150 transform -translate-y-1/2 pointer-events-none"></div>
         <div class="flex items-center gap-3 relative z-10">
             <i class="fas fa-graduation-cap text-3xl drop-shadow-md"></i>
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight drop-shadow-md">Média de Área de Conhecimento</h1>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight drop-shadow-md">Média de Área de Conhecimento - IPI e GTU</h1>
         </div>
         <div id="status-cloud" class="flex items-center gap-2 text-sm bg-blue-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-400/30 shadow-inner relative z-10 transition-all">
             <i class="fas fa-cloud text-blue-200" id="cloud-icon"></i>
-            <span id="cloud-text" class="font-medium tracking-wide hidden sm:inline">A ligar...</span>
+            <span id="cloud-text" class="font-medium tracking-wide hidden sm:inline">Conectando...</span>
         </div>
     </header>
 
@@ -77,7 +77,7 @@
                 <div class="flex items-center gap-3">
                     <i class="fas fa-exclamation-triangle text-amber-500 text-xl mt-1 sm:mt-0"></i>
                     <p class="text-sm text-amber-800" id="aviso-nuvem-texto">
-                        <strong>Aviso Importante:</strong> É necessária ligação com a internet para guardar na nuvem. As notas são guardadas automaticamente ao digitar.
+                        <strong>Aviso Importante:</strong> É necessário conexão com a internet para salvar na nuvem. As notas são salvas automaticamente ao digitar.
                     </p>
                 </div>
                 <div class="mt-2 sm:mt-0 sm:ml-auto bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded shadow-sm whitespace-nowrap border border-amber-300">
@@ -86,7 +86,7 @@
             </div>
         </div>
 
-        <!-- Controles: Seleção de Turma e Guardar -->
+        <!-- Controles: Seleção de Turma e Salvar -->
         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 relative z-20">
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-2/3">
                 <div class="flex items-center gap-3 w-full sm:w-1/2">
@@ -110,10 +110,10 @@
             
             <div class="flex items-center gap-3 w-full md:w-auto flex-col sm:flex-row">
                 <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-5 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-file-csv text-green-600"></i> Descarregar Backup
+                    <i class="fas fa-file-csv text-green-600"></i> Baixar Backup
                 </button>
                 <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-save text-lg"></i> Guardar Alterações
+                    <i class="fas fa-save text-lg"></i> Salvar Alterações
                 </button>
             </div>
         </div>
@@ -125,7 +125,7 @@
             <div id="loading-overlay" class="absolute inset-0 bg-white/90 z-30 flex items-center justify-center" style="display: none;">
                 <div class="flex flex-col items-center text-blue-600">
                     <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
-                    <span class="font-medium">A sincronizar dados...</span>
+                    <span class="font-medium">Sincronizando dados...</span>
                 </div>
             </div>
 
@@ -136,11 +136,11 @@
                 </div>
                 <h2 class="text-2xl sm:text-3xl font-bold text-slate-700 mb-3">Bem-vindo(a) ao Sistema de Notas</h2>
                 <p class="text-slate-600 max-w-lg mb-6 text-lg">
-                    Para otimizar o desempenho, a grelha de notas está oculta. Por favor, <strong>selecione uma Turma</strong> no menu acima para começar a inserir ou visualizar as notas.
+                    Para otimizar o desempenho, a planilha de notas está oculta. Por favor, <strong>selecione uma Turma</strong> no menu acima para começar a lançar ou visualizar as notas.
                 </p>
                 <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm text-sm text-slate-500 max-w-md text-left flex items-start gap-3">
                     <i class="fas fa-lightbulb text-amber-500 text-xl mt-0.5"></i>
-                    <p>Dica: Após selecionar a turma, também poderá selecionar um professor específico para destacar as respetivas disciplinas com cores na tabela.</p>
+                    <p>Dica: Após selecionar a turma, também poderá selecionar um professor específico para destacar as respectivas disciplinas com cores na tabela.</p>
                 </div>
             </div>
 
@@ -166,7 +166,7 @@
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
         <i class="fas fa-check-circle"></i>
-        <span id="toast-message">Notas guardadas com sucesso!</span>
+        <span id="toast-message">Notas salvas com sucesso!</span>
     </div>
 
     <!-- Firebase Scripts -->
@@ -187,29 +187,29 @@
             ],
             disciplinas: {
                 '1_IPI': [
-                    { id: '1IPI_D1', nome: 'Fundamentos da Computação', professor: 'Profª. Letícia' },
+                    { id: '1IPI_D1', nome: 'Fundamentos da Computação', professor: 'Profª Letícia' },
                     { id: '1IPI_D2', nome: 'Introdução ao Desenvolvimento Web', professor: 'Prof. Romerson' },
                     { id: '1IPI_D3', nome: 'Lógica de Programação e Gamificação', professor: 'Prof. Rodrigo' }
                 ],
                 '2_IPI': [
-                    { id: '2IPI_D1', nome: 'Cultura Digital', professor: 'Profª. Letícia' },
+                    { id: '2IPI_D1', nome: 'Cultura Digital', professor: 'Profª Letícia' },
                     { id: '2IPI_D2', nome: 'Linguagem de Programação Aplicada à Web', professor: 'Prof. Romerson' },
                     { id: '2IPI_D3', nome: 'Banco de Dados', professor: 'Prof. Rodrigo' },
                     { id: '2IPI_D4', nome: 'IoT - Internet of Things', professor: 'Prof. Rodrigo' }
                 ],
                 '2_GTU': [
-                    { id: '2GTU_D1', nome: 'Cultura Digital', professor: 'Profª. Letícia' },
+                    { id: '2GTU_D1', nome: 'Cultura Digital', professor: 'Profª Letícia' },
                     { id: '2GTU_D2', nome: 'Cooperativismo', professor: 'Prof. Rodrigo' },
                     { id: '2GTU_D4', nome: 'Eventos, Recreação e Lazer Turístico', professor: 'Prof. Caéco' },
-                    { id: '2GTU_D5', nome: 'Marketing Organizacional', professor: 'Profª. Beatriz' },
-                    { id: '2GTU_D6', nome: 'Recursos Ambientais', professor: 'Profª. Lorena' }
+                    { id: '2GTU_D5', nome: 'Marketing Organizacional', professor: 'Profª Beatriz' },
+                    { id: '2GTU_D6', nome: 'Recursos Ambientais', professor: 'Profª Lorena' }
                 ],
                 '3_GTU': [
                     { id: '3GTU_D1', nome: 'Ecoturismo', professor: 'Prof. Caéco' },
                     { id: '3GTU_D2', nome: 'Técnicas de Trabalho para Guia de Turismo', professor: 'Prof. Caéco' },
                     { id: '3GTU_D3', nome: 'Manifestação da Cultura Popular', professor: 'Prof. Caéco' },
-                    { id: '3GTU_D4', nome: 'Comunicação e Branding', professor: 'Profª. Beatriz' },
-                    { id: '3GTU_D5', nome: 'E-commerce', professor: 'Profª. Beatriz' }
+                    { id: '3GTU_D4', nome: 'Comunicação e Branding', professor: 'Profª Beatriz' },
+                    { id: '3GTU_D5', nome: 'E-commerce', professor: 'Profª Beatriz' }
                 ]
             },
             alunos: {
@@ -356,12 +356,12 @@
         };
 
         const CORES_PROFESSORES = {
-            'Profª. Letícia': 'bg-pink-100',
+            'Profª Letícia': 'bg-pink-100',
             'Prof. Romerson': 'bg-sky-100',
             'Prof. Rodrigo': 'bg-emerald-100',
             'Prof. Caéco': 'bg-amber-100',
-            'Profª. Beatriz': 'bg-violet-100',
-            'Profª. Lorena': 'bg-teal-100'
+            'Profª Beatriz': 'bg-violet-100',
+            'Profª Lorena': 'bg-teal-100'
         };
 
         // ============================================================================
@@ -416,16 +416,16 @@
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
-                        atualizarStatusNuvem(true, "Ligado");
+                        atualizarStatusNuvem(true, "Conectado");
                         escutarDadosDoBanco();
                     } else {
                         userId = null;
-                        atualizarStatusNuvem(false, "Desligado");
+                        atualizarStatusNuvem(false, "Desconectado");
                     }
                 });
             } catch (erro) {
-                console.error("Erro ao inicializar base de dados:", erro);
-                atualizarStatusNuvem(false, "Erro de Ligação");
+                console.error("Erro ao inicializar banco de dados:", erro);
+                atualizarStatusNuvem(false, "Erro de Conexão");
                 document.getElementById('loading-overlay').style.display = 'none';
                 dadosCarregadosInicialmente = true;
             }
@@ -439,7 +439,7 @@
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
-                    // Substitui os dados locais pela base de dados sempre atualizada
+                    // Substitui os dados locais pelo banco de dados sempre atualizado
                     estado.notas = docSnap.data().notas || {};
                 } else {
                     estado.notas = {};
@@ -455,7 +455,7 @@
                 }
             }, (erro) => {
                 console.error("Erro ao escutar dados:", erro);
-                atualizarStatusNuvem(false, "Erro de Sincronização");
+                atualizarStatusNuvem(false, "Erro de Sincronia");
                 document.getElementById('loading-overlay').style.display = 'none';
                 dadosCarregadosInicialmente = true;
             });
@@ -464,7 +464,7 @@
         // Função dedicada a guardar instantaneamente uma única célula alterada (Em Tempo Real)
         async function salvarNotaIndividualNoBanco(chave, valor) {
             if (!userId) return;
-            atualizarStatusNuvem(true, "A guardar...");
+            atualizarStatusNuvem(true, "Salvando...");
 
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
@@ -475,24 +475,24 @@
                 payload.notas[chave] = valor !== null ? valor : deleteField();
 
                 await setDoc(docRef, payload, { merge: true });
-                atualizarStatusNuvem(true, "Guardado na nuvem");
+                atualizarStatusNuvem(true, "Salvo na nuvem");
             } catch (erro) {
-                console.error("Erro ao guardar célula:", erro);
-                atualizarStatusNuvem(false, "Erro ao guardar");
+                console.error("Erro ao salvar célula:", erro);
+                atualizarStatusNuvem(false, "Erro ao salvar");
             }
         }
 
-        // O botão de guardar massivo agora serve mais como precaução/garantia
+        // O botão de salvar massivo agora serve mais como precaução/garantia
         async function salvarDadosNoBanco(mostrarAviso = false) {
             if (!userId) return;
             if (isSaving && mostrarAviso) return;
             
             isSaving = true;
-            atualizarStatusNuvem(true, "A guardar...");
+            atualizarStatusNuvem(true, "Salvando...");
             const btnSalvar = document.getElementById('btn-salvar');
             
             if (mostrarAviso) {
-                btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i> A guardar...';
+                btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i> Salvando...';
                 btnSalvar.disabled = true;
             }
 
@@ -504,16 +504,16 @@
                 const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
                 await Promise.race([operacaoSalvar, timeout]);
                 
-                atualizarStatusNuvem(true, "Guardado na nuvem");
+                atualizarStatusNuvem(true, "Salvo na nuvem");
                 if(mostrarAviso) mostrarToast();
             } catch (erro) {
-                console.error("Erro ao guardar tudo:", erro);
-                atualizarStatusNuvem(false, "Erro ao guardar");
-                if (mostrarAviso) alert("Tempo limite excedido a guardar todos os dados.");
+                console.error("Erro ao salvar tudo:", erro);
+                atualizarStatusNuvem(false, "Erro ao salvar");
+                if (mostrarAviso) alert("Tempo limite excedido ao salvar todos os dados.");
             } finally {
                 isSaving = false;
                 if (mostrarAviso) {
-                    btnSalvar.innerHTML = '<i class="fas fa-save text-lg"></i> Guardar Alterações';
+                    btnSalvar.innerHTML = '<i class="fas fa-save text-lg"></i> Salvar Alterações';
                     btnSalvar.disabled = false;
                 }
             }
@@ -572,7 +572,7 @@
                         salvarNotaIndividualNoBanco(chave, valor);
                     } else if (e.target.value === '') {
                         delete estado.notas[chave]; 
-                        // Registo de deleção unitária imediata
+                        // Registro de exclusão unitária imediata
                         salvarNotaIndividualNoBanco(chave, null);
                     }
                     
@@ -597,7 +597,7 @@
             const turmaId = estado.turmaSelecionada;
 
             if (!turmaId) {
-                profSeletor.innerHTML = `<option value="Todos">A aguardar turma...</option>`;
+                profSeletor.innerHTML = `<option value="Todos">Aguardando turma...</option>`;
                 profSeletor.disabled = true;
                 return;
             }
@@ -679,7 +679,7 @@
             });
             
             if(alunos.length === 0) {
-                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-gray-500">Nenhum aluno registado nesta turma.</td></tr>`;
+                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-gray-500">Nenhum aluno registrado nesta turma.</td></tr>`;
             }
             
             document.getElementById('table-body').innerHTML = tbodyHTML;
@@ -793,7 +793,7 @@
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
             
             if (alunos.length === 0) {
-                alert("Não existem alunos para exportar nesta turma.");
+                alert("Não há alunos para exportar nesta turma.");
                 return;
             }
 
@@ -830,7 +830,7 @@
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             
-            const dataAtual = new Date().toLocaleDateString('pt-PT').replace(/\//g, '-');
+            const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
             const nomeTurma = DADOS_ESCOLA.turmas.find(t=>t.id===turmaId).nome;
             
             link.setAttribute("href", url);
@@ -863,6 +863,23 @@
         }
 
         window.addEventListener('DOMContentLoaded', () => {
+            // Aplicar cor aleatória ao cabeçalho
+            const header = document.getElementById('main-header');
+            const allGradients = ['from-blue-700', 'to-blue-500', 'from-purple-700', 'to-purple-500', 'from-indigo-700', 'to-indigo-500', 'from-teal-700', 'to-teal-500', 'from-emerald-700', 'to-emerald-500', 'from-rose-700', 'to-rose-500', 'from-orange-600', 'to-orange-400'];
+            const gradientsPairs = [
+                ['from-blue-700', 'to-blue-500'],
+                ['from-purple-700', 'to-purple-500'],
+                ['from-indigo-700', 'to-indigo-500'],
+                ['from-teal-700', 'to-teal-500'],
+                ['from-emerald-700', 'to-emerald-500'],
+                ['from-rose-700', 'to-rose-500'],
+                ['from-orange-600', 'to-orange-400']
+            ];
+            
+            header.classList.remove(...allGradients);
+            const randomGradient = gradientsPairs[Math.floor(Math.random() * gradientsPairs.length)];
+            header.classList.add(...randomGradient);
+
             inicializarInterface();
             inicializarFirebase();
         });
