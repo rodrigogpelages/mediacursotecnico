@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Média de Área de Conhecimento</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* Estilos adicionais para a tabela parecer uma planilha */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; 
+            margin: 0; 
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .cell-input {
+            width: 100%;
+            height: 100%;
+            min-height: 48px;
+            text-align: center;
+            background: transparent;
+            outline: none;
+            border: 2px solid transparent;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            color: #1e293b;
+            cursor: pointer;
+        }
+        .cell-input:hover {
+            background: #f8fafc;
+        }
+        .cell-input:focus {
+            border: 2px solid #3b82f6;
+            background: #eff6ff;
+            border-radius: 6px;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.1);
+            z-index: 10;
+            position: relative;
+        }
+        .cell-input:invalid {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+        table { border-spacing: 0; }
+        tbody tr { transition: background-color 0.2s ease; }
+        tbody tr:hover { background-color: #f1f5f9 !important; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg p-4 flex justify-between items-center relative overflow-hidden">
+        <div class="absolute inset-0 bg-white/10 rotate-12 scale-150 transform -translate-y-1/2 pointer-events-none"></div>
+        <div class="flex items-center gap-3 relative z-10">
+            <i class="fas fa-graduation-cap text-3xl drop-shadow-md"></i>
+            <h1 class="text-xl sm:text-2xl font-bold tracking-tight drop-shadow-md">Média de Área de Conhecimento</h1>
+        </div>
+        <div id="status-cloud" class="flex items-center gap-2 text-sm bg-blue-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-400/30 shadow-inner relative z-10 transition-all">
+            <i class="fas fa-cloud text-blue-200" id="cloud-icon"></i>
+            <span id="cloud-text" class="font-medium tracking-wide hidden sm:inline">Conectando...</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col gap-5">
+        
+        <!-- Banner de Aviso -->
+        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-md shadow-sm flex items-start sm:items-center justify-between gap-4">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-exclamation-triangle text-amber-500 text-xl mt-1 sm:mt-0"></i>
+                    <p class="text-sm text-amber-800">
+                        <strong>Aviso Importante:</strong> É necessário conexão com a internet para salvar na nuvem. Após preencher as notas, 
+                        lembre-se de clicar em <strong>"Salvar Alterações"</strong> para guardar seu trabalho.
+                    </p>
+                </div>
+                <div class="mt-2 sm:mt-0 sm:ml-auto bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded shadow-sm whitespace-nowrap border border-amber-300">
+                    <i class="fas fa-star text-amber-600 mr-1"></i> Avaliação qualitativa - 6 pontos
+                </div>
+            </div>
+        </div>
+
+        <!-- Controles: Seleção de Turma e Salvar -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-2/3">
+                <div class="flex items-center gap-3 w-full sm:w-1/2">
+                    <label for="turma-select" class="font-bold text-slate-700 flex items-center gap-2">
+                        <i class="fas fa-users text-blue-500"></i> Turma:
+                    </label>
+                    <select id="turma-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-blue-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer">
+                        <!-- Opções injetadas via JS -->
+                    </select>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-1/2">
+                    <label for="prof-select" class="font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">
+                        <i class="fas fa-chalkboard-teacher text-purple-500"></i> Professor:
+                    </label>
+                    <select id="prof-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-purple-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer">
+                        <option value="Todos">Todos</option>
+                        <!-- Opções injetadas via JS -->
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full md:w-auto flex-col sm:flex-row">
+                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-5 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95">
+                    <i class="fas fa-file-csv text-green-600"></i> Baixar Backup
+                </button>
+                <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95">
+                    <i class="fas fa-save text-lg"></i> Salvar Alterações
+                </button>
+            </div>
+        </div>
+
+        <!-- Planilha de Notas -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col relative">
+            
+            <div id="loading-overlay" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+                <div class="flex flex-col items-center text-blue-600">
+                    <i class="fas fa-spinner fa-spin text-4xl mb-2"></i>
+                    <span>Carregando dados...</span>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto flex-1">
+                <table class="w-full text-sm text-left border-collapse min-w-[800px]">
+                    <thead id="table-head" class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-0">
+                        <!-- Cabeçalho injetado via JS -->
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-gray-200">
+                        <!-- Linhas injetadas via JS -->
+                    </tbody>
+                    <tfoot id="table-foot" class="bg-gray-50 font-semibold text-gray-800 sticky bottom-0 border-t-2 border-gray-300">
+                        <!-- Rodapé injetado via JS -->
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">Notas salvas com sucesso!</span>
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ============================================================================
+        // 1. CONFIGURAÇÃO DE DADOS MOCK (Serão substituídos quando você enviar a lista)
+        // ============================================================================
+        const DADOS_ESCOLA = {
+            turmas: [
+                { id: '1_IPI', nome: '1ª IPI' },
+                { id: '2_IPI', nome: '2ª IPI' },
+                { id: '2_GTU', nome: '2ª GTU' },
+                { id: '3_GTU', nome: '3ª GTU' }
+            ],
+            disciplinas: {
+                '1_IPI': [
+                    { id: '1IPI_D1', nome: 'Fundamentos da Computação', professor: 'Profa. Letícia' },
+                    { id: '1IPI_D2', nome: 'Introdução ao Desenvolvimento Web', professor: 'Prof. Romerson' },
+                    { id: '1IPI_D3', nome: 'Lógica de Programação e Gamificação', professor: 'Prof. Rodrigo' }
+                ],
+                '2_IPI': [
+                    { id: '2IPI_D1', nome: 'Cultura Digital', professor: 'Profa. Letícia' },
+                    { id: '2IPI_D2', nome: 'Linguagem de Programação Aplicada à Web', professor: 'Prof. Romerson' },
+                    { id: '2IPI_D3', nome: 'Banco de Dados', professor: 'Prof. Rodrigo' },
+                    { id: '2IPI_D4', nome: 'IoT - Internet of Things', professor: 'Prof. Rodrigo' }
+                ],
+                '2_GTU': [
+                    { id: '2GTU_D1', nome: 'Cultura Digital', professor: 'Profa. Letícia' },
+                    { id: '2GTU_D2', nome: 'Cooperativismo', professor: 'Prof. Rodrigo' },
+                    { id: '2GTU_D4', nome: 'Eventos, Recreação e Lazer Turístico', professor: 'Prof. Caéco' },
+                    { id: '2GTU_D5', nome: 'Marketing Organizacional', professor: 'Profa. Beatriz' },
+                    { id: '2GTU_D6', nome: 'Recursos Ambientais', professor: 'Profa. Lorena' }
+                ],
+                '3_GTU': [
+                    { id: '3GTU_D1', nome: 'Ecoturismo', professor: 'Prof. Caéco' },
+                    { id: '3GTU_D2', nome: 'Técnicas de Trabalho para Guia de Turismo', professor: 'Prof. Caéco' },
+                    { id: '3GTU_D3', nome: 'Manifestação da Cultura Popular', professor: 'Prof. Caéco' },
+                    { id: '3GTU_D4', nome: 'Comunicação e Branding', professor: 'Profa. Beatriz' },
+                    { id: '3GTU_D5', nome: 'E-commerce', professor: 'Profa. Beatriz' }
+                ]
+            },
+            alunos: {
+                '1_IPI': [
+                    { id: '1IPI_1', nome: 'ALLICIA PINHEIRO FARIA FELIX' },
+                    { id: '1IPI_2', nome: 'BEATRIZ MARCILIO SILVA' },
+                    { id: '1IPI_3', nome: 'DIENIFFER PRATA DE SOUZA' },
+                    { id: '1IPI_4', nome: 'ELOA HERCULANO DE MENEZES' },
+                    { id: '1IPI_5', nome: 'GABRIEL DIAS DE SOUZA' },
+                    { id: '1IPI_6', nome: 'GABRIELLE MARTINS DE QUEIROZ' },
+                    { id: '1IPI_7', nome: 'IARA PRATA DOS SANTOS' },
+                    { id: '1IPI_8', nome: 'IARA RAMOS RODRIGUES' },
+                    { id: '1IPI_9', nome: 'JULIA APARECIDA MENDES DOS SANTOS XAVIER' },
+                    { id: '1IPI_10', nome: 'JULIANA BRAGANCA PALACIO DA SILVA' },
+                    { id: '1IPI_11', nome: 'JULIANA NEVES ANEQUIM' },
+                    { id: '1IPI_12', nome: 'KAMILLY VITORIA ESTRELA ZAMPILLI' },
+                    { id: '1IPI_13', nome: 'KAUAN PEREIRA MARVILA' },
+                    { id: '1IPI_14', nome: 'LARISSA MOREIRA GARCIA' },
+                    { id: '1IPI_15', nome: 'LETICIA SANTOS DE MENEZES' },
+                    { id: '1IPI_16', nome: 'LUIZ PHELIPE RIBEIRO CORREIA' },
+                    { id: '1IPI_17', nome: 'MANUELA FERNANDES DE SOUZA' },
+                    { id: '1IPI_18', nome: 'MARCELLY LUPARELLI MACHADO' },
+                    { id: '1IPI_19', nome: 'MARIA CLARA FERNANDES BITENCOURT' },
+                    { id: '1IPI_20', nome: 'MARIA CLARA HERCULANO ROSA' },
+                    { id: '1IPI_21', nome: 'MARIA FERNANDA XAVIER PALACIO' },
+                    { id: '1IPI_22', nome: 'MARIA VITORIA SANTANA DOS SANTOS CORREA' },
+                    { id: '1IPI_23', nome: 'MARIANA ARAUJO DA SILVA' },
+                    { id: '1IPI_24', nome: 'MATEUS BITENCOURT FERREIRA' },
+                    { id: '1IPI_25', nome: 'MAYARA PIONELLI GUALANDE' },
+                    { id: '1IPI_26', nome: 'MAYRA MONTEIRO ALVES' },
+                    { id: '1IPI_27', nome: 'MAYRON VICTOR VIEIRA NEVES RAIMUNDO' },
+                    { id: '1IPI_28', nome: 'NATHALIA ELIAS CABRAL' },
+                    { id: '1IPI_29', nome: 'PEDRO HIGOR DA SILVA CIRILIO' },
+                    { id: '1IPI_30', nome: 'PEDRO LUCAS LIMA DOS SANTOS' },
+                    { id: '1IPI_31', nome: 'RAFAEL DE ARAUJO STANEK' },
+                    { id: '1IPI_32', nome: 'RAFAELA BERCACO FELIX' },
+                    { id: '1IPI_33', nome: 'RAFAELLA SILVA LOPES' },
+                    { id: '1IPI_34', nome: 'RAFAELLI SIQUEIRA AZEVEDO' },
+                    { id: '1IPI_35', nome: 'THALLIS DE SOUZA LIVIO' },
+                    { id: '1IPI_36', nome: 'THAYANE BISPO LEAO' },
+                    { id: '1IPI_37', nome: 'VALENTINNA DE AZEVEDO CORREIA' },
+                    { id: '1IPI_38', nome: 'YASMIN CAMPOS DE OLIVEIRA' },
+                    { id: '1IPI_39', nome: 'YUD CORREA RODRIGUES MAZZA PEREIRA' },
+                    { id: '1IPI_40', nome: 'LUCAS CATTEM VALLE' }
+                ],
+                '2_IPI': [
+                    { id: '2IPI_1', nome: 'ALLETSON PIRES FLORIANO DA SILVA' },
+                    { id: '2IPI_2', nome: 'ALLYSTER LIVRAMENTO DA SILVA NASCIMENTO' },
+                    { id: '2IPI_3', nome: 'ANA CLARA CORREIA MENDONCA' },
+                    { id: '2IPI_4', nome: 'ANA CLARA VENCIONECK MORENO' },
+                    { id: '2IPI_5', nome: 'AQUILA SIMOES DIAS' },
+                    { id: '2IPI_6', nome: 'BIANCA RIBEIRO SILVA JUMETTI' },
+                    { id: '2IPI_7', nome: 'BRYAN MONTEIRO BLUNCK' },
+                    { id: '2IPI_8', nome: 'DAFNI VERLY DE ABREU' },
+                    { id: '2IPI_9', nome: 'DANIELLA ALMEIDA FONTOURA' },
+                    { id: '2IPI_10', nome: 'DAVI LAZARINI AZEVEDO' },
+                    { id: '2IPI_11', nome: 'DELAIAS CARVALHO BRITES' },
+                    { id: '2IPI_12', nome: 'EMANUELLY ROCHA FARIA' },
+                    { id: '2IPI_13', nome: 'EVILLYN APARECIDA TOREZANI FERREIRA' },
+                    { id: '2IPI_14', nome: 'GIOVANNI PONTICELLI PAVANI' },
+                    { id: '2IPI_15', nome: 'GUILHERME BERNARDO GONCALVES THOMAZ' },
+                    { id: '2IPI_16', nome: 'GUILHERME FURTADO DE ARAUJO MARQUES' },
+                    { id: '2IPI_17', nome: 'HEDER OLIVEIRA DE SOUZA' },
+                    { id: '2IPI_18', nome: 'HEITOR DA SILVA SOUZA' },
+                    { id: '2IPI_19', nome: 'HENRY MARTINS DA SILVA LOUCANA' },
+                    { id: '2IPI_20', nome: 'HIURY DA SILVA GUALANDE' },
+                    { id: '2IPI_21', nome: 'ITALO GARCIA NASCIMENTO' },
+                    { id: '2IPI_22', nome: 'LARISSA SOUZA DA SILVA' },
+                    { id: '2IPI_23', nome: 'LAYS LOURENCO FERREIRA' },
+                    { id: '2IPI_24', nome: 'LEANDRO RIBEIRO DA SILVA ALMEIDA SANTANA BATISTA' },
+                    { id: '2IPI_25', nome: 'LETICIA BENTO RICHARDELLI' },
+                    { id: '2IPI_26', nome: 'LYNCON PALACIO DE OLIVEIRA' },
+                    { id: '2IPI_27', nome: 'MARCELA CABRAL BONZE' },
+                    { id: '2IPI_28', nome: 'MARIA EDUARDA SANTIAGO FERNANDES' },
+                    { id: '2IPI_29', nome: 'MARIANA DA SILVA TEIXEIRA' },
+                    { id: '2IPI_30', nome: 'MICKELLY DE PAULA BALBINO' },
+                    { id: '2IPI_31', nome: 'NATHALYA MARIA LOPES DIAS' },
+                    { id: '2IPI_32', nome: 'RAFAEL JUNIOR PELAZ DA SILVA PONTICELLI' },
+                    { id: '2IPI_33', nome: 'RAFAEL RIBEIRO MONTOZO' },
+                    { id: '2IPI_34', nome: 'RAYSSA MENGALI PEREIRA BALTAZAR' },
+                    { id: '2IPI_35', nome: 'RYAN DA SILVA CORREIA' },
+                    { id: '2IPI_36', nome: 'WESLEY ALMEIDA COSTA' }
+                ],
+                '2_GTU': [
+                    { id: '2GTU_1', nome: 'ANNA VICTORYA THOMAZ DA SILVA' },
+                    { id: '2GTU_2', nome: 'CRISTIANA SARDENBERG GATTE' },
+                    { id: '2GTU_3', nome: 'EDNEY DE ALMEIDA SILVA' },
+                    { id: '2GTU_4', nome: 'ELIANA POUBEL DA LUZ CRECENCIO' },
+                    { id: '2GTU_5', nome: 'EROS PIMENTA EMERENCIANO' },
+                    { id: '2GTU_6', nome: 'EVANDRO DA SILVA PAULA' },
+                    { id: '2GTU_7', nome: 'FABIANI MARINS PELICIONI' },
+                    { id: '2GTU_8', nome: 'GIULLIA TAVARES BARBOZA DE LIMA' },
+                    { id: '2GTU_9', nome: 'ISABELLY ALVES ANIBAL PACIENCIA' },
+                    { id: '2GTU_10', nome: 'JULIA DIAS DE ALMEIDA PEREVEZON' },
+                    { id: '2GTU_11', nome: 'KAIQUE MARCELINO DE SOUZA' },
+                    { id: '2GTU_12', nome: 'KASSYANNE MEDEIROS THOMAZ' },
+                    { id: '2GTU_13', nome: 'KAUAN RODRIGUES COUTO' },
+                    { id: '2GTU_14', nome: 'KETELIN ESTEVES DE SOUZA' },
+                    { id: '2GTU_15', nome: 'KRYSTYAN AMORIM MONTOVANI' },
+                    { id: '2GTU_16', nome: 'LAUANI SILVA FREITAS' },
+                    { id: '2GTU_17', nome: 'MAIANNY DIAS MONTEIRO' },
+                    { id: '2GTU_18', nome: 'MARCOS PAULO CASSAGO DA SILVA' },
+                    { id: '2GTU_19', nome: 'MARIA EDUARDA FERREIRA SOARES' },
+                    { id: '2GTU_20', nome: 'MATEUS DOS SANTOS MENDONCA' },
+                    { id: '2GTU_21', nome: 'MATEUS FERNANDO DA SILVA PASTOR' },
+                    { id: '2GTU_22', nome: 'MIGUEL FIGUEIRA GARCIA DE OLIVEIRA' },
+                    { id: '2GTU_23', nome: 'MIGUEL MARTINS DE ARAUJO' },
+                    { id: '2GTU_24', nome: 'MIGUEL POUBEL FRANCA RODRIGUES' },
+                    { id: '2GTU_25', nome: 'MURILO SOUSA DE ARAUJO CLEMENTE' },
+                    { id: '2GTU_26', nome: 'PYETRO GONCALVES GUALANDI' },
+                    { id: '2GTU_27', nome: 'RAFAEL DA SILVA FAGUNDES' },
+                    { id: '2GTU_28', nome: 'RONALD MATEINE BRAGANCA MELLO DOS SANTOS' },
+                    { id: '2GTU_29', nome: 'SHERON EVELYN VIEIRA CORREA' },
+                    { id: '2GTU_30', nome: 'THARCIELLY FERNANDES NARDUCI' },
+                    { id: '2GTU_31', nome: 'VITOR DOMINGOS VERLY MORAES' },
+                    { id: '2GTU_32', nome: 'YASMIN DE BARROS E BARROS GRANELLI' }
+                ],
+                '3_GTU': [
+                    { id: '3GTU_1', nome: 'AGATHA LUCIANO BORGES' },
+                    { id: '3GTU_2', nome: 'AMANDA FERREIRA MARTINS BITENCOURT' },
+                    { id: '3GTU_3', nome: 'ANA FLAVIA OLIVEIRA FERREIRA' },
+                    { id: '3GTU_4', nome: 'ANA LUIZA LUCINDO MARTINS' },
+                    { id: '3GTU_5', nome: 'HUGO DE ASSIS PEREIRA' },
+                    { id: '3GTU_6', nome: 'ILBHERTY MENDES PASSINI MATEINI DA SILVA' },
+                    { id: '3GTU_7', nome: 'JULIA TEIXEIRA DA SILVA' },
+                    { id: '3GTU_8', nome: 'LAILA MELLO ARAUJO MAINARDI MOTTA' },
+                    { id: '3GTU_9', nome: 'LARA MAGANHA MONTEIRO' },
+                    { id: '3GTU_10', nome: 'LAVINIA BRAGANCA DA SILVA' },
+                    { id: '3GTU_11', nome: 'LIVIA LOURENCO DE ANDRADE CAMPOS' },
+                    { id: '3GTU_12', nome: 'LUCAS GABRIEL DE OLIVEIRA ARTIGAS' },
+                    { id: '3GTU_13', nome: 'MARIA THEREZA DE MEDEIROS RAMOS' },
+                    { id: '3GTU_14', nome: 'RAFAEL DE JESUS DAVID' },
+                    { id: '3GTU_15', nome: 'REBECA MACHADO LUPARELLI MACEDO' },
+                    { id: '3GTU_16', nome: 'RYANN PALACIO DIAS' }
+                ]
+            }
+        };
+
+        // Estado da aplicação
+        let estado = {
+            turmaSelecionada: '1_IPI',
+            professorSelecionado: 'Todos',
+            notas: {} // Formato: { "T1_A1_D1": 5, "T1_A1_D2": 4.5, ... }
+        };
+
+        const CORES_PROFESSORES = {
+            'Profa. Letícia': 'bg-pink-100',
+            'Prof. Romerson': 'bg-sky-100',
+            'Prof. Rodrigo': 'bg-emerald-100',
+            'Prof. Caéco': 'bg-amber-100',
+            'Profa. Beatriz': 'bg-violet-100',
+            'Profa. Lorena': 'bg-teal-100'
+        };
+
+        // ============================================================================
+        // 2. CONFIGURAÇÃO DO FIREBASE (BANCO DE DADOS EM NUVEM)
+        // ============================================================================
+        let db, auth;
+        let userId = null;
+        let saveTimeout = null;
+
+        async function inicializarFirebase() {
+            try {
+                // Se rodando no Canvas, pega configuração local, senão pede a configuração do GitHub
+                let firebaseConfig;
+                if (typeof __firebase_config !== 'undefined') {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                } else {
+                    // ATENÇÃO: Quando for hospedar no GitHub, você precisará criar um projeto 
+                    // no Firebase (é de graça) e colar as chaves aqui!
+                    firebaseConfig = {
+                        apiKey: "SUA_API_KEY",
+                        authDomain: "SEU_PROJETO.firebaseapp.com",
+                        projectId: "SEU_PROJETO",
+                        storageBucket: "SEU_PROJETO.appspot.com",
+                        messagingSenderId: "SEU_SENDER_ID",
+                        appId: "SEU_APP_ID"
+                    };
+                    console.warn("Lembre-se de configurar o Firebase para uso fora do ambiente de testes.");
+                }
+
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                // Autenticação para proteger os dados
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Monitora o login
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        atualizarStatusNuvem(true, "Conectado");
+                        escutarDadosDoBanco();
+                    } else {
+                        userId = null;
+                        atualizarStatusNuvem(false, "Desconectado");
+                    }
+                });
+            } catch (erro) {
+                console.error("Erro ao inicializar banco de dados:", erro);
+                atualizarStatusNuvem(false, "Erro de Conexão");
+                document.getElementById('loading-overlay').style.display = 'none';
+            }
+        }
+
+        // Ler dados do banco em tempo real
+        function escutarDadosDoBanco() {
+            if (!userId) return;
+            
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
+            // Caminho restrito e seguro no banco de dados
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'registros_diarios', 'notas_gerais');
+
+            onSnapshot(docRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    estado.notas = docSnap.data().notas || {};
+                }
+                document.getElementById('loading-overlay').style.display = 'none';
+                renderizarPlanilha(); // Atualiza a tela com os dados vindos da nuvem
+            }, (erro) => {
+                console.error("Erro ao escutar dados:", erro);
+                atualizarStatusNuvem(false, "Erro de Sincronia");
+            });
+        }
+
+        // Salvar dados no banco
+        async function salvarDadosNoBanco(mostrarAviso = false) {
+            if (!userId) return;
+            
+            atualizarStatusNuvem(true, "Salvando...");
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
+            const docRef = doc(db, 'artifacts', appId, 'users', userId, 'registros_diarios', 'notas_gerais');
+            
+            try {
+                await setDoc(docRef, { notas: estado.notas }, { merge: true });
+                atualizarStatusNuvem(true, "Salvo na nuvem");
+                if(mostrarAviso) mostrarToast();
+            } catch (erro) {
+                console.error("Erro ao salvar:", erro);
+                atualizarStatusNuvem(false, "Erro ao salvar");
+            }
+        }
+
+        // ============================================================================
+        // 3. LÓGICA DE INTERFACE E PLANILHA (HTML/DOM)
+        // ============================================================================
+
+        function inicializarInterface() {
+            // Ordenar disciplinas em ordem alfabética para todas as turmas
+            Object.keys(DADOS_ESCOLA.disciplinas).forEach(turmaId => {
+                DADOS_ESCOLA.disciplinas[turmaId].sort((a, b) => a.nome.localeCompare(b.nome));
+            });
+
+            const seletor = document.getElementById('turma-select');
+            seletor.innerHTML = DADOS_ESCOLA.turmas.map(t => 
+                `<option value="${t.id}">${t.nome}</option>`
+            ).join('');
+
+            seletor.addEventListener('change', (e) => {
+                estado.turmaSelecionada = e.target.value;
+                atualizarSeletorProfessor();
+                renderizarPlanilha();
+            });
+
+            const profSeletor = document.getElementById('prof-select');
+            profSeletor.addEventListener('change', (e) => {
+                estado.professorSelecionado = e.target.value;
+                renderizarPlanilha();
+            });
+
+            document.getElementById('btn-salvar').addEventListener('click', () => {
+                salvarDadosNoBanco(true);
+            });
+
+            // Chama na inicialização
+            atualizarSeletorProfessor();
+
+            // Botão de Exportar Backup
+            document.getElementById('btn-exportar').addEventListener('click', exportarParaCSV);
+
+            // Event Delegation para inputs de notas (Ouve digitações dinamicamente)
+            document.getElementById('table-body').addEventListener('input', (e) => {
+                if(e.target.classList.contains('cell-input')) {
+                    const alunoId = e.target.dataset.aluno;
+                    const discId = e.target.dataset.disciplina;
+                    let valor = parseFloat(e.target.value);
+                    
+                    // Validação: Mínimo 1, Máximo 6
+                    if (!isNaN(valor)) {
+                        if(valor < 1) valor = 1;
+                        if(valor > 6) valor = 6;
+                        
+                        const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
+                        estado.notas[chave] = valor;
+                    } else if (e.target.value === '') {
+                        const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
+                        delete estado.notas[chave]; // Remove a nota se apagar o campo
+                    }
+                    
+                    calcularMediasEmTempoReal();
+
+                    // Auto-salvamento após 1.5s que parar de digitar
+                    clearTimeout(saveTimeout);
+                    saveTimeout = setTimeout(() => salvarDadosNoBanco(false), 1500);
+                }
+            });
+            
+            // Garantir que a exibição da nota cortada respeite limite visual
+            document.getElementById('table-body').addEventListener('change', (e) => {
+                 if(e.target.classList.contains('cell-input')) {
+                     let valor = parseFloat(e.target.value);
+                     if(!isNaN(valor)) {
+                         e.target.value = valor; // Reflete no input o valor clamped
+                     }
+                 }
+            });
+        }
+
+        function atualizarSeletorProfessor() {
+            const turmaId = estado.turmaSelecionada;
+            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
+            
+            // Extrair professores únicos da turma atual
+            const professoresUnicos = [...new Set(disciplinas.map(d => d.professor))].sort();
+            
+            const profSeletor = document.getElementById('prof-select');
+            let opcoesHTML = `<option value="Todos">Todos</option>`;
+            professoresUnicos.forEach(prof => {
+                opcoesHTML += `<option value="${prof}">${prof}</option>`;
+            });
+            profSeletor.innerHTML = opcoesHTML;
+            
+            // Reseta a seleção ao trocar de turma
+            estado.professorSelecionado = 'Todos';
+            profSeletor.value = 'Todos';
+        }
+
+        function renderizarPlanilha() {
+            const turmaId = estado.turmaSelecionada;
+            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
+
+            // 1. Cabeçalho
+            let theadHTML = `<tr>
+                <th scope="col" class="px-4 py-3 border-r border-gray-200 bg-gray-100 min-w-[200px]">Nome do Aluno</th>`;
+            
+            disciplinas.forEach(d => {
+                const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
+                const corFundoTh = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
+                
+                theadHTML += `<th scope="col" class="px-2 py-3 border-r border-gray-200 text-center w-32 transition-colors duration-300 ${corFundoTh}">
+                    <div class="font-bold text-gray-800">${d.nome}</div>
+                    <div class="text-[10px] font-semibold text-gray-600 truncate bg-white/50 rounded mt-1 px-1 py-0.5" title="${d.professor}">${d.professor}</div>
+                </th>`;
+            });
+            theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold">Média do Aluno</th></tr>`;
+            document.getElementById('table-head').innerHTML = theadHTML;
+
+            // 2. Corpo (Alunos e Inputs)
+            let tbodyHTML = '';
+            alunos.forEach(aluno => {
+                tbodyHTML += `<tr class="hover:bg-blue-50/50 transition-colors">
+                    <td class="px-4 py-2 border-r border-gray-200 font-medium">${aluno.nome}</td>`;
+                
+                disciplinas.forEach(d => {
+                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
+                    const nota = estado.notas[chave] !== undefined ? estado.notas[chave] : '';
+                    
+                    const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
+                    const corFundoTd = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
+                    
+                    tbodyHTML += `<td class="border-r border-gray-200 p-0 transition-colors duration-300 ${corFundoTd}">
+                        <input type="number" 
+                               class="cell-input" 
+                               min="1" max="6" step="0.5"
+                               data-aluno="${aluno.id}" 
+                               data-disciplina="${d.id}"
+                               value="${nota}"
+                               placeholder="-">
+                    </td>`;
+                });
+                
+                // Célula da média do aluno
+                tbodyHTML += `<td class="px-4 py-2 bg-blue-50/30 text-center font-bold text-blue-800 border-l border-blue-100" id="media-aluno-${aluno.id}">-</td></tr>`;
+            });
+            
+            if(alunos.length === 0) {
+                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-gray-500">Nenhum aluno cadastrado nesta turma.</td></tr>`;
+            }
+            
+            document.getElementById('table-body').innerHTML = tbodyHTML;
+
+            // 3. Rodapé (Média da Turma)
+            let tfootHTML = `<tr><td class="px-4 py-3 border-r border-gray-200 text-right">Média da Turma:</td>`;
+            disciplinas.forEach(d => {
+                const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
+                const corFundoTf = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
+                
+                tfootHTML += `<td class="px-4 py-3 border-r border-gray-200 text-center font-bold text-blue-700 transition-colors duration-300 ${corFundoTf}" id="media-disc-${d.id}">-</td>`;
+            });
+            tfootHTML += `<td class="px-4 py-3 bg-blue-100 text-blue-900 text-center" id="media-geral-turma">-</td></tr>`;
+            document.getElementById('table-foot').innerHTML = tfootHTML;
+
+            calcularMediasEmTempoReal();
+        }
+
+        function calcularMediasEmTempoReal() {
+            const turmaId = estado.turmaSelecionada;
+            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
+
+            let somaGeralTurma = 0;
+            let totalNotasGeral = 0;
+
+            // Médias por Aluno (Linhas)
+            alunos.forEach(aluno => {
+                let somaAluno = 0;
+                let contAluno = 0;
+
+                disciplinas.forEach(d => {
+                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
+                    const nota = estado.notas[chave];
+                    if (nota !== undefined && nota !== null) {
+                        somaAluno += Number(nota);
+                        contAluno++;
+                    }
+                });
+
+                const mediaAlunoElem = document.getElementById(`media-aluno-${aluno.id}`);
+                if (mediaAlunoElem) {
+                    if (contAluno > 0) {
+                        const media = somaAluno / contAluno;
+                        mediaAlunoElem.textContent = media.toFixed(1);
+                        somaGeralTurma += media;
+                        totalNotasGeral++;
+                    } else {
+                        mediaAlunoElem.textContent = '-';
+                    }
+                }
+            });
+
+            // Médias por Disciplina (Colunas)
+            disciplinas.forEach(d => {
+                let somaDisc = 0;
+                let contDisc = 0;
+
+                alunos.forEach(aluno => {
+                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
+                    const nota = estado.notas[chave];
+                    if (nota !== undefined && nota !== null) {
+                        somaDisc += Number(nota);
+                        contDisc++;
+                    }
+                });
+
+                const mediaDiscElem = document.getElementById(`media-disc-${d.id}`);
+                if (mediaDiscElem) {
+                    if (contDisc > 0) {
+                        mediaDiscElem.textContent = (somaDisc / contDisc).toFixed(1);
+                    } else {
+                        mediaDiscElem.textContent = '-';
+                    }
+                }
+            });
+
+            // Média Geral da Turma (Canto inferior direito)
+            const mediaGeralElem = document.getElementById('media-geral-turma');
+            if (mediaGeralElem) {
+                if (totalNotasGeral > 0) {
+                    mediaGeralElem.textContent = (somaGeralTurma / totalNotasGeral).toFixed(1);
+                } else {
+                    mediaGeralElem.textContent = '-';
+                }
+            }
+        }
+
+        // ============================================================================
+        // 4. UTILITÁRIOS (Toast, Status UI)
+        // ============================================================================
+        
+        function exportarParaCSV() {
+            const turmaId = estado.turmaSelecionada;
+            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
+            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
+            
+            if (alunos.length === 0) {
+                alert("Não há alunos para exportar nesta turma.");
+                return;
+            }
+
+            // BOM para Excel reconhecer acentos (UTF-8)
+            let csvContent = "\uFEFF"; 
+            
+            // Cabeçalho
+            let header = ["Nome do Aluno"];
+            disciplinas.forEach(d => header.push(d.nome));
+            header.push("Média do Aluno");
+            csvContent += header.join(";") + "\r\n";
+
+            // Linhas dos Alunos
+            alunos.forEach(aluno => {
+                let row = [aluno.nome];
+                let soma = 0; 
+                let cont = 0;
+                
+                disciplinas.forEach(d => {
+                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
+                    let nota = estado.notas[chave];
+                    if (nota !== undefined && nota !== null) {
+                        row.push(nota.toString().replace('.', ',')); // Formato BR
+                        soma += Number(nota);
+                        cont++;
+                    } else {
+                        row.push("");
+                    }
+                });
+                
+                let media = cont > 0 ? (soma / cont).toFixed(1).replace('.', ',') : "";
+                row.push(media);
+                csvContent += row.join(";") + "\r\n";
+            });
+
+            // Download do arquivo
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+            const nomeTurma = DADOS_ESCOLA.turmas.find(t=>t.id===turmaId).nome;
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Backup_Notas_${nomeTurma}_${dataAtual}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function atualizarStatusNuvem(ok, texto) {
+            const icone = document.getElementById('cloud-icon');
+            const spanText = document.getElementById('cloud-text');
+            spanText.textContent = texto;
+            
+            if (ok) {
+                icone.className = "fas fa-cloud-check text-green-300";
+            } else {
+                icone.className = "fas fa-cloud-xmark text-red-300";
+            }
+        }
+
+        function mostrarToast() {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Iniciar tudo quando a página carregar
+        window.addEventListener('DOMContentLoaded', () => {
+            inicializarInterface();
+            inicializarFirebase();
+        });
+
+    </script>
+</body>
+</html>
