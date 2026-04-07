@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,7 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        /* Estilos adicionais para a tabela parecer uma planilha */
+        /* Estilos adicionais para a tabela parecer uma folha de cálculo */
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { 
             -webkit-appearance: none; 
@@ -64,7 +64,7 @@
         </div>
         <div id="status-cloud" class="flex items-center gap-2 text-sm bg-blue-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-400/30 shadow-inner relative z-10 transition-all">
             <i class="fas fa-cloud text-blue-200" id="cloud-icon"></i>
-            <span id="cloud-text" class="font-medium tracking-wide hidden sm:inline">Conectando...</span>
+            <span id="cloud-text" class="font-medium tracking-wide hidden sm:inline">A ligar...</span>
         </div>
     </header>
 
@@ -77,8 +77,8 @@
                 <div class="flex items-center gap-3">
                     <i class="fas fa-exclamation-triangle text-amber-500 text-xl mt-1 sm:mt-0"></i>
                     <p class="text-sm text-amber-800" id="aviso-nuvem-texto">
-                        <strong>Aviso Importante:</strong> É necessário conexão com a internet para salvar na nuvem. Após preencher as notas, 
-                        lembre-se de clicar em <strong>"Salvar Alterações"</strong> para guardar seu trabalho.
+                        <strong>Aviso Importante:</strong> É necessária ligação com a internet para guardar na nuvem. Após preencher as notas, 
+                        lembre-se de clicar em <strong>"Guardar Alterações"</strong> para salvar o seu trabalho.
                     </p>
                 </div>
                 <div class="mt-2 sm:mt-0 sm:ml-auto bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded shadow-sm whitespace-nowrap border border-amber-300">
@@ -87,8 +87,8 @@
             </div>
         </div>
 
-        <!-- Controles: Seleção de Turma e Salvar -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4">
+        <!-- Controles: Seleção de Turma e Guardar -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 relative z-20">
             <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-2/3">
                 <div class="flex items-center gap-3 w-full sm:w-1/2">
                     <label for="turma-select" class="font-bold text-slate-700 flex items-center gap-2">
@@ -102,7 +102,7 @@
                     <label for="prof-select" class="font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">
                         <i class="fas fa-chalkboard-teacher text-purple-500"></i> Professor:
                     </label>
-                    <select id="prof-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-purple-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer">
+                    <select id="prof-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-purple-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
                         <option value="Todos">Todos</option>
                         <!-- Opções injetadas via JS -->
                     </select>
@@ -110,38 +110,56 @@
             </div>
             
             <div class="flex items-center gap-3 w-full md:w-auto flex-col sm:flex-row">
-                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-5 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95">
-                    <i class="fas fa-file-csv text-green-600"></i> Baixar Backup
+                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-5 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-file-csv text-green-600"></i> Descarregar Backup
                 </button>
-                <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95">
-                    <i class="fas fa-save text-lg"></i> Salvar Alterações
+                <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-save text-lg"></i> Guardar Alterações
                 </button>
             </div>
         </div>
 
-        <!-- Planilha de Notas -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 overflow-hidden flex flex-col relative">
+        <!-- Área Dinâmica: Instruções ou Planilha -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col relative overflow-hidden">
             
-            <div id="loading-overlay" class="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+            <!-- Inicia oculto com style="display: none;" para não bloquear a tela inicial -->
+            <div id="loading-overlay" class="absolute inset-0 bg-white/90 z-30 flex items-center justify-center" style="display: none;">
                 <div class="flex flex-col items-center text-blue-600">
-                    <i class="fas fa-spinner fa-spin text-4xl mb-2"></i>
-                    <span>Carregando dados...</span>
+                    <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
+                    <span class="font-medium">A sincronizar dados...</span>
                 </div>
             </div>
 
-            <div class="overflow-x-auto flex-1">
+            <!-- Tela Inicial de Instruções -->
+            <div id="instructions-container" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50">
+                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
+                    <i class="fas fa-chalkboard-teacher text-5xl text-blue-500"></i>
+                </div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-slate-700 mb-3">Bem-vindo(a) ao Sistema de Notas</h2>
+                <p class="text-slate-600 max-w-lg mb-6 text-lg">
+                    Para otimizar o desempenho, a grelha de notas está oculta. Por favor, <strong>selecione uma Turma</strong> no menu acima para começar a inserir ou visualizar as notas.
+                </p>
+                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm text-sm text-slate-500 max-w-md text-left flex items-start gap-3">
+                    <i class="fas fa-lightbulb text-amber-500 text-xl mt-0.5"></i>
+                    <p>Dica: Após selecionar a turma, também poderá selecionar um professor específico para destacar as respetivas disciplinas com cores na tabela.</p>
+                </div>
+            </div>
+
+            <!-- Planilha de Notas (Inicialmente Oculta) -->
+            <div id="table-container" class="overflow-x-auto flex-1 hidden">
                 <table class="w-full text-sm text-left border-collapse min-w-[800px]">
-                    <thead id="table-head" class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-0">
+                    <thead id="table-head" class="text-xs text-gray-700 uppercase bg-gray-100 sticky top-0 z-10 shadow-sm">
                         <!-- Cabeçalho injetado via JS -->
                     </thead>
                     <tbody id="table-body" class="divide-y divide-gray-200">
                         <!-- Linhas injetadas via JS -->
                     </tbody>
-                    <tfoot id="table-foot" class="bg-gray-50 font-semibold text-gray-800 sticky bottom-0 border-t-2 border-gray-300">
+                    <tfoot id="table-foot" class="bg-gray-50 font-semibold text-gray-800 sticky bottom-0 border-t-2 border-gray-300 z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
                         <!-- Rodapé injetado via JS -->
                     </tfoot>
                 </table>
             </div>
+
         </div>
 
     </main>
@@ -149,7 +167,7 @@
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-20 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
         <i class="fas fa-check-circle"></i>
-        <span id="toast-message">Notas salvas com sucesso!</span>
+        <span id="toast-message">Notas guardadas com sucesso!</span>
     </div>
 
     <!-- Firebase Scripts -->
@@ -159,7 +177,7 @@
         import { getFirestore, doc, setDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ============================================================================
-        // 1. CONFIGURAÇÃO DE DADOS MOCK (Serão substituídos quando você enviar a lista)
+        // 1. CONFIGURAÇÃO DE DADOS MOCK 
         // ============================================================================
         const DADOS_ESCOLA = {
             turmas: [
@@ -333,9 +351,9 @@
 
         // Estado da aplicação
         let estado = {
-            turmaSelecionada: '1_IPI',
+            turmaSelecionada: '', // Inicia vazio para mostrar a tela de instruções
             professorSelecionado: 'Todos',
-            notas: {} // Formato: { "T1_A1_D1": 5, "T1_A1_D2": 4.5, ... }
+            notas: {} 
         };
 
         const CORES_PROFESSORES = {
@@ -353,11 +371,12 @@
         let db, auth;
         let userId = null;
         let saveTimeout = null;
-        let dadosCarregadosInicialmente = false; // Flag para evitar travamentos
+        let dadosCarregadosInicialmente = false; 
+        let isSaving = false; // Bloqueio para prevenir cliques duplicados no botão de guardar
 
         async function inicializarFirebase() {
             try {
-                // Se rodando no Canvas, pega configuração local, senão pega a configuração real
+                // Se rodar no Canvas, obtém configuração local, senão obtém a configuração real
                 let firebaseConfig;
                 if (typeof __firebase_config !== 'undefined') {
                     firebaseConfig = JSON.parse(__firebase_config);
@@ -374,18 +393,19 @@
                     };
                 }
 
-                // TRAVA DE SEGURANÇA PARA O GITHUB: 
+                // SEGURANÇA PARA O GITHUB
                 if (firebaseConfig.apiKey === "SUA_API_KEY" || firebaseConfig.apiKey.includes("exemplo")) {
-                    console.warn("Chaves do Firebase não configuradas. Rodando modo local (apenas backup CSV).");
+                    console.warn("Chaves do Firebase não configuradas. A correr em modo local (apenas backup CSV).");
                     
                     const avisoTexto = document.getElementById('aviso-nuvem-texto');
                     if(avisoTexto) {
-                        avisoTexto.innerHTML = '<strong>Modo Offline/Local:</strong> O salvamento automático na nuvem está desativado porque o Firebase não foi configurado. Você pode continuar usando a planilha normalmente e salvar usando o botão <strong>"Baixar Backup"</strong>.';
+                        avisoTexto.innerHTML = '<strong>Modo Offline/Local:</strong> A gravação automática na nuvem está desativada porque o Firebase não foi configurado. Pode continuar a usar a grelha normalmente e guardar o seu trabalho através do botão <strong>"Descarregar Backup"</strong>.';
                     }
                     
                     atualizarStatusNuvem(false, "Falta Configurar Firebase");
                     document.getElementById('loading-overlay').style.display = 'none';
-                    return; // Interrompe a inicialização
+                    dadosCarregadosInicialmente = true;
+                    return; 
                 }
 
                 const app = initializeApp(firebaseConfig);
@@ -404,31 +424,32 @@
                     if (authErro.code === 'auth/operation-not-allowed') {
                         const avisoTexto = document.getElementById('aviso-nuvem-texto');
                         if (avisoTexto) {
-                            avisoTexto.innerHTML = '<strong class="text-red-700">Ação Necessária no Firebase:</strong> O salvamento na nuvem falhou porque o login <strong>"Anônimo"</strong> está desativado. Vá no painel do Firebase > Authentication > Sign-in method, e ative o provedor "Anônimo".';
+                            avisoTexto.innerHTML = '<strong class="text-red-700">Ação Necessária no Firebase:</strong> A gravação na nuvem falhou porque o login <strong>"Anónimo"</strong> está desativado. Vá ao painel do Firebase > Authentication > Sign-in method, e ative o provedor "Anónimo".';
                         }
                     }
                     throw authErro; 
                 }
 
-                // Monitora o login
+                // Monitoriza o login
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid;
-                        atualizarStatusNuvem(true, "Conectado");
+                        atualizarStatusNuvem(true, "Ligado");
                         escutarDadosDoBanco();
                     } else {
                         userId = null;
-                        atualizarStatusNuvem(false, "Desconectado");
+                        atualizarStatusNuvem(false, "Desligado");
                     }
                 });
             } catch (erro) {
-                console.error("Erro ao inicializar banco de dados:", erro);
-                atualizarStatusNuvem(false, "Erro de Conexão");
+                console.error("Erro ao inicializar base de dados:", erro);
+                atualizarStatusNuvem(false, "Erro de Ligação");
                 document.getElementById('loading-overlay').style.display = 'none';
+                dadosCarregadosInicialmente = true;
             }
         }
 
-        // Ler dados do banco em tempo real
+        // Ler dados da base de dados em tempo real
         function escutarDadosDoBanco() {
             if (!userId) return;
             
@@ -439,38 +460,45 @@
                 if (docSnap.exists()) {
                     estado.notas = docSnap.data().notas || {};
                 }
+                
+                // Oculta a sobreposição de carregamento global quando os dados chegam da nuvem
                 document.getElementById('loading-overlay').style.display = 'none';
                 
-                // OTIMIZAÇÃO: Só reconstrói a tabela inteira na primeira vez que abre
                 if (!dadosCarregadosInicialmente) {
-                    renderizarPlanilha(); 
+                    // Na primeira vez, apenas define que carregou. O ecrã vai exibir as "Instruções" 
+                    // porque nenhuma turma foi selecionada ainda.
                     dadosCarregadosInicialmente = true;
-                } else {
-                    // Se não for a primeira vez, faz uma atualização suave para não travar a tela
+                    renderizarPlanilha(); 
+                } else if (estado.turmaSelecionada) {
+                    // Atualiza suavemente se já houver uma tabela montada no ecrã
                     atualizarValoresNaTela();
                 }
             }, (erro) => {
                 console.error("Erro ao escutar dados:", erro);
-                atualizarStatusNuvem(false, "Erro de Sincronia");
+                atualizarStatusNuvem(false, "Erro de Sincronização");
+                document.getElementById('loading-overlay').style.display = 'none';
+                dadosCarregadosInicialmente = true;
             });
         }
 
-        // Salvar dados no banco
+        // Guardar dados na base de dados
         async function salvarDadosNoBanco(mostrarAviso = false) {
             if (!userId) {
                 if (mostrarAviso) {
-                    alert("A nuvem não está conectada! Verifique se ativou o login Anônimo no Firebase. Use o botão 'Baixar Backup' para não perder seus dados enquanto isso.");
+                    alert("A nuvem não está ligada! Verifique se ativou o login Anónimo no Firebase. Use o botão 'Descarregar Backup' para não perder os seus dados enquanto isso.");
                 }
                 return;
             }
+
+            // Evitar cliques múltiplos que deixam o botão encravado
+            if (isSaving && mostrarAviso) return;
+            isSaving = true;
             
-            atualizarStatusNuvem(true, "Salvando...");
+            atualizarStatusNuvem(true, "A guardar...");
             const btnSalvar = document.getElementById('btn-salvar');
-            const conteudoOriginalBtn = btnSalvar.innerHTML;
             
-            // Dá um feedback visual no botão ao salvar
             if (mostrarAviso) {
-                btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i> Salvando...';
+                btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i> A guardar...';
                 btnSalvar.disabled = true;
                 btnSalvar.classList.add('opacity-75', 'cursor-not-allowed');
             }
@@ -479,16 +507,35 @@
             const docRef = doc(db, 'artifacts', appId, 'users', userId, 'registros_diarios', 'notas_gerais');
             
             try {
-                await setDoc(docRef, { notas: estado.notas }, { merge: true });
-                atualizarStatusNuvem(true, "Salvo na nuvem");
+                // Configuração de temporizador (timeout) de 8 segundos:
+                // Se a base de dados falhar a resposta (ex: erro de ligação invisível), não congela o UI para sempre.
+                const operacaoSalvar = setDoc(docRef, { notas: estado.notas }, { merge: true });
+                const timeout = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Timeout")), 8000)
+                );
+
+                await Promise.race([operacaoSalvar, timeout]);
+                
+                atualizarStatusNuvem(true, "Guardado na nuvem");
                 if(mostrarAviso) mostrarToast();
             } catch (erro) {
-                console.error("Erro ao salvar:", erro);
-                atualizarStatusNuvem(false, "Erro ao salvar");
-            } finally {
-                // Restaura o botão ao normal
+                console.error("Erro ao guardar:", erro);
+                atualizarStatusNuvem(false, "Erro ao guardar");
+                
                 if (mostrarAviso) {
-                    btnSalvar.innerHTML = conteudoOriginalBtn;
+                    // Tratamento detalhado de erros para ajudar a solucionar o bloqueio
+                    if (erro.code === 'permission-denied') {
+                        alert("Acesso Negado! Precisa de ir ao painel do Firebase > Firestore Database > Regras (Rules) e permitir a leitura e escrita (iniciar em modo de teste).");
+                    } else if (erro.message === "Timeout") {
+                        alert("Tempo limite excedido! Confirme se já clicou em 'Criar Base de Dados' no menu 'Firestore Database' do painel do Firebase.");
+                    } else {
+                        alert("Aviso: Ocorreu um problema ao tentar comunicar com a base de dados. Detalhe: " + erro.message);
+                    }
+                }
+            } finally {
+                isSaving = false;
+                if (mostrarAviso) {
+                    btnSalvar.innerHTML = '<i class="fas fa-save text-lg"></i> Guardar Alterações';
                     btnSalvar.disabled = false;
                     btnSalvar.classList.remove('opacity-75', 'cursor-not-allowed');
                 }
@@ -500,20 +547,24 @@
         // ============================================================================
 
         function inicializarInterface() {
-            // Ordenar disciplinas em ordem alfabética para todas as turmas
             Object.keys(DADOS_ESCOLA.disciplinas).forEach(turmaId => {
                 DADOS_ESCOLA.disciplinas[turmaId].sort((a, b) => a.nome.localeCompare(b.nome));
             });
 
             const seletor = document.getElementById('turma-select');
-            seletor.innerHTML = DADOS_ESCOLA.turmas.map(t => 
-                `<option value="${t.id}">${t.nome}</option>`
-            ).join('');
+            // Opção inicial desativada a pedir para selecionar
+            let seletorHTML = '<option value="" disabled selected>Selecione uma Turma...</option>';
+            seletorHTML += DADOS_ESCOLA.turmas.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
+            seletor.innerHTML = seletorHTML;
 
             seletor.addEventListener('change', (e) => {
                 estado.turmaSelecionada = e.target.value;
                 atualizarSeletorProfessor();
                 renderizarPlanilha();
+                
+                // Ativa os botões de ação após selecionar a turma
+                document.getElementById('btn-exportar').disabled = false;
+                document.getElementById('btn-salvar').disabled = false;
             });
 
             const profSeletor = document.getElementById('prof-select');
@@ -526,20 +577,21 @@
                 salvarDadosNoBanco(true);
             });
 
-            // Chama na inicialização
+            // Chama na inicialização (vai bloquear o botão porque não tem turma)
             atualizarSeletorProfessor();
+            
+            // Botões inicialmente desativados para evitar cliques sem turma
+            document.getElementById('btn-exportar').disabled = true;
+            document.getElementById('btn-salvar').disabled = true;
 
-            // Botão de Exportar Backup
             document.getElementById('btn-exportar').addEventListener('click', exportarParaCSV);
 
-            // Event Delegation para inputs de notas (Ouve digitações dinamicamente)
             document.getElementById('table-body').addEventListener('input', (e) => {
                 if(e.target.classList.contains('cell-input')) {
                     const alunoId = e.target.dataset.aluno;
                     const discId = e.target.dataset.disciplina;
                     let valor = parseFloat(e.target.value);
                     
-                    // Validação: Mínimo 1, Máximo 6
                     if (!isNaN(valor)) {
                         if(valor < 1) valor = 1;
                         if(valor > 6) valor = 6;
@@ -548,49 +600,74 @@
                         estado.notas[chave] = valor;
                     } else if (e.target.value === '') {
                         const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
-                        delete estado.notas[chave]; // Remove a nota se apagar o campo
+                        delete estado.notas[chave]; 
                     }
                     
                     calcularMediasEmTempoReal();
 
-                    // Auto-salvamento após 1.5s que parar de digitar
                     clearTimeout(saveTimeout);
                     saveTimeout = setTimeout(() => salvarDadosNoBanco(false), 1500);
                 }
             });
             
-            // Garantir que a exibição da nota cortada respeite limite visual
             document.getElementById('table-body').addEventListener('change', (e) => {
                  if(e.target.classList.contains('cell-input')) {
                      let valor = parseFloat(e.target.value);
                      if(!isNaN(valor)) {
-                         e.target.value = valor; // Reflete no input o valor clamped
+                         e.target.value = valor; 
                      }
                  }
             });
+            
+            // Força a exibição das instruções no carregamento inicial
+            renderizarPlanilha();
         }
 
         function atualizarSeletorProfessor() {
+            const profSeletor = document.getElementById('prof-select');
             const turmaId = estado.turmaSelecionada;
+
+            if (!turmaId) {
+                profSeletor.innerHTML = `<option value="Todos">A aguardar turma...</option>`;
+                profSeletor.disabled = true;
+                return;
+            }
+
+            profSeletor.disabled = false;
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-            
-            // Extrair professores únicos da turma atual
             const professoresUnicos = [...new Set(disciplinas.map(d => d.professor))].sort();
             
-            const profSeletor = document.getElementById('prof-select');
             let opcoesHTML = `<option value="Todos">Todos</option>`;
             professoresUnicos.forEach(prof => {
                 opcoesHTML += `<option value="${prof}">${prof}</option>`;
             });
             profSeletor.innerHTML = opcoesHTML;
             
-            // Reseta a seleção ao trocar de turma
             estado.professorSelecionado = 'Todos';
             profSeletor.value = 'Todos';
         }
 
         function renderizarPlanilha() {
+            const tableContainer = document.getElementById('table-container');
+            const instructionsContainer = document.getElementById('instructions-container');
             const turmaId = estado.turmaSelecionada;
+
+            // Se nenhuma turma foi selecionada, mostra as instruções e sai
+            if (!turmaId) {
+                tableContainer.classList.add('hidden');
+                instructionsContainer.classList.remove('hidden');
+                return;
+            }
+
+            // Se selecionou uma turma, esconde as instruções e mostra a tabela
+            instructionsContainer.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            // MOSTRA A SOBREPOSIÇÃO SE OS DADOS AINDA NÃO CHEGARAM DA NUVEM E A PESSOA JÁ CLICOU NUMA TURMA
+            if (!dadosCarregadosInicialmente) {
+                document.getElementById('loading-overlay').style.display = 'flex';
+            }
+
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
 
@@ -610,7 +687,7 @@
             theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold">Média do Aluno</th></tr>`;
             document.getElementById('table-head').innerHTML = theadHTML;
 
-            // 2. Corpo (Alunos e Inputs)
+            // 2. Corpo
             let tbodyHTML = '';
             alunos.forEach(aluno => {
                 tbodyHTML += `<tr class="hover:bg-blue-50/50 transition-colors">
@@ -634,17 +711,16 @@
                     </td>`;
                 });
                 
-                // Célula da média do aluno
                 tbodyHTML += `<td class="px-4 py-2 bg-blue-50/30 text-center font-bold text-blue-800 border-l border-blue-100" id="media-aluno-${aluno.id}">-</td></tr>`;
             });
             
             if(alunos.length === 0) {
-                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-gray-500">Nenhum aluno cadastrado nesta turma.</td></tr>`;
+                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-gray-500">Nenhum aluno registado nesta turma.</td></tr>`;
             }
             
             document.getElementById('table-body').innerHTML = tbodyHTML;
 
-            // 3. Rodapé (Média da Turma)
+            // 3. Rodapé
             let tfootHTML = `<tr><td class="px-4 py-3 border-r border-gray-200 text-right">Média da Turma:</td>`;
             disciplinas.forEach(d => {
                 const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
@@ -658,7 +734,7 @@
             calcularMediasEmTempoReal();
         }
 
-        // OTIMIZAÇÃO: Atualização suave que previne travamentos durante a digitação
+        // Atualização suave
         function atualizarValoresNaTela() {
             const inputs = document.querySelectorAll('.cell-input');
             inputs.forEach(input => {
@@ -667,7 +743,6 @@
                 const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
                 const nota = estado.notas[chave];
                 
-                // Não atualiza o campo que o usuário está editando agora para não "puxar" o cursor dele
                 if (document.activeElement !== input) {
                     input.value = nota !== undefined ? nota : '';
                 }
@@ -677,13 +752,15 @@
 
         function calcularMediasEmTempoReal() {
             const turmaId = estado.turmaSelecionada;
+            if(!turmaId) return; // Não calcula se não houver turma
+
             const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
 
             let somaGeralTurma = 0;
             let totalNotasGeral = 0;
 
-            // Médias por Aluno (Linhas)
+            // Médias por Aluno
             alunos.forEach(aluno => {
                 let somaAluno = 0;
                 let contAluno = 0;
@@ -710,7 +787,7 @@
                 }
             });
 
-            // Médias por Disciplina (Colunas)
+            // Médias por Disciplina
             disciplinas.forEach(d => {
                 let somaDisc = 0;
                 let contDisc = 0;
@@ -734,7 +811,7 @@
                 }
             });
 
-            // Média Geral da Turma (Canto inferior direito)
+            // Média Geral
             const mediaGeralElem = document.getElementById('media-geral-turma');
             if (mediaGeralElem) {
                 if (totalNotasGeral > 0) {
@@ -755,20 +832,18 @@
             const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
             
             if (alunos.length === 0) {
-                alert("Não há alunos para exportar nesta turma.");
+                alert("Não existem alunos para exportar nesta turma.");
                 return;
             }
 
             // BOM para Excel reconhecer acentos (UTF-8)
             let csvContent = "\uFEFF"; 
             
-            // Cabeçalho
             let header = ["Nome do Aluno"];
             disciplinas.forEach(d => header.push(d.nome));
             header.push("Média do Aluno");
             csvContent += header.join(";") + "\r\n";
 
-            // Linhas dos Alunos
             alunos.forEach(aluno => {
                 let row = [aluno.nome];
                 let soma = 0; 
@@ -778,7 +853,7 @@
                     const chave = `${turmaId}_${aluno.id}_${d.id}`;
                     let nota = estado.notas[chave];
                     if (nota !== undefined && nota !== null) {
-                        row.push(nota.toString().replace('.', ',')); // Formato BR
+                        row.push(nota.toString().replace('.', ','));
                         soma += Number(nota);
                         cont++;
                     } else {
@@ -791,12 +866,11 @@
                 csvContent += row.join(";") + "\r\n";
             });
 
-            // Download do arquivo
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
             
-            const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
+            const dataAtual = new Date().toLocaleDateString('pt-PT').replace(/\//g, '-');
             const nomeTurma = DADOS_ESCOLA.turmas.find(t=>t.id===turmaId).nome;
             
             link.setAttribute("href", url);
