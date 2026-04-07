@@ -52,6 +52,9 @@
 </head>
 <body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col">
 
+    <!-- Hack para o Tailwind CDN carregar as cores dinâmicas no GitHub Pages -->
+    <div class="hidden bg-pink-100 bg-sky-100 bg-emerald-100 bg-amber-100 bg-violet-100 bg-teal-100 bg-yellow-200 text-gray-800 text-gray-600 bg-white/50 border-r border-gray-200"></div>
+
     <!-- Header -->
     <header class="bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg p-4 flex justify-between items-center relative overflow-hidden">
         <div class="absolute inset-0 bg-white/10 rotate-12 scale-150 transform -translate-y-1/2 pointer-events-none"></div>
@@ -73,7 +76,7 @@
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-exclamation-triangle text-amber-500 text-xl mt-1 sm:mt-0"></i>
-                    <p class="text-sm text-amber-800">
+                    <p class="text-sm text-amber-800" id="aviso-nuvem-texto">
                         <strong>Aviso Importante:</strong> É necessário conexão com a internet para salvar na nuvem. Após preencher as notas, 
                         lembre-se de clicar em <strong>"Salvar Alterações"</strong> para guardar seu trabalho.
                     </p>
@@ -353,33 +356,59 @@
 
         async function inicializarFirebase() {
             try {
-                // Se rodando no Canvas, pega configuração local, senão pede a configuração do GitHub
+                // Se rodando no Canvas, pega configuração local, senão pega a configuração real
                 let firebaseConfig;
                 if (typeof __firebase_config !== 'undefined') {
                     firebaseConfig = JSON.parse(__firebase_config);
                 } else {
-                    // ATENÇÃO: Quando for hospedar no GitHub, você precisará criar um projeto 
-                    // no Firebase (é de graça) e colar as chaves aqui!
+                    // CONFIGURAÇÃO REAL DO FIREBASE APLICADA
                     firebaseConfig = {
-                        apiKey: "SUA_API_KEY",
-                        authDomain: "SEU_PROJETO.firebaseapp.com",
-                        projectId: "SEU_PROJETO",
-                        storageBucket: "SEU_PROJETO.appspot.com",
-                        messagingSenderId: "SEU_SENDER_ID",
-                        appId: "SEU_APP_ID"
+                        apiKey: "AIzaSyB5pYi6Et_Q4ZShfDXusLNwiZdyFwqm7SI",
+                        authDomain: "media-de-area.firebaseapp.com",
+                        projectId: "media-de-area",
+                        storageBucket: "media-de-area.firebasestorage.app",
+                        messagingSenderId: "136992091036",
+                        appId: "1:136992091036:web:fd35efbbb11ec978c07659",
+                        measurementId: "G-2XLDLLSCSQ"
                     };
-                    console.warn("Lembre-se de configurar o Firebase para uso fora do ambiente de testes.");
+                }
+
+                // TRAVA DE SEGURANÇA PARA O GITHUB: 
+                // Se as chaves ainda forem as de exemplo, bloqueia a conexão para não gerar erro na tela
+                if (firebaseConfig.apiKey === "SUA_API_KEY" || firebaseConfig.apiKey.includes("exemplo")) {
+                    console.warn("Chaves do Firebase não configuradas. Rodando modo local (apenas backup CSV).");
+                    
+                    const avisoTexto = document.getElementById('aviso-nuvem-texto');
+                    if(avisoTexto) {
+                        avisoTexto.innerHTML = '<strong>Modo Offline/Local:</strong> O salvamento automático na nuvem está desativado porque o Firebase não foi configurado. Você pode continuar usando a planilha normalmente e salvar usando o botão <strong>"Baixar Backup"</strong>.';
+                    }
+                    
+                    atualizarStatusNuvem(false, "Falta Configurar Firebase");
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    return; // Interrompe a inicialização do banco para não dar erro
                 }
 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                // Autenticação para proteger os dados
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                // TRATAMENTO MELHORADO DE ERRO DE AUTENTICAÇÃO
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (authErro) {
+                    console.error("Erro no Auth:", authErro);
+                    if (authErro.code === 'auth/operation-not-allowed') {
+                        // Se o login anônimo não estiver ativado no Firebase
+                        const avisoTexto = document.getElementById('aviso-nuvem-texto');
+                        if (avisoTexto) {
+                            avisoTexto.innerHTML = '<strong class="text-red-700">Ação Necessária no Firebase:</strong> O salvamento na nuvem falhou porque o login <strong>"Anônimo"</strong> está desativado. Vá no painel do Firebase > Authentication > Sign-in method, e ative o provedor "Anônimo".';
+                        }
+                    }
+                    throw authErro; // Repassa o erro para cancelar o carregamento
                 }
 
                 // Monitora o login
@@ -422,7 +451,12 @@
 
         // Salvar dados no banco
         async function salvarDadosNoBanco(mostrarAviso = false) {
-            if (!userId) return;
+            if (!userId) {
+                if (mostrarAviso) {
+                    alert("A nuvem não está conectada! Verifique se ativou o login Anônimo no Firebase. Use o botão 'Baixar Backup' para não perder seus dados enquanto isso.");
+                }
+                return;
+            }
             
             atualizarStatusNuvem(true, "Salvando...");
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
