@@ -3,10 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Média de Área de Conhecimento - IPI e GTU</title>
+    <title>Sistema de Notas - Acesso Restrito</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Desabilita a seleção de texto na página inteira para dificultar cópias */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+        }
+
         /* Estilos adicionais para a tabela parecer uma planilha */
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { 
@@ -49,1325 +56,638 @@
         tbody tr { transition: background-color 0.2s ease; }
         tbody tr:hover { background-color: #f1f5f9 !important; }
         
-        /* Custom scrollbar for modal */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col">
+<body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden" id="app-body">
 
-    <!-- Hack para o Tailwind CDN carregar as cores dinâmicas no GitHub Pages -->
-    <div class="hidden bg-pink-100 bg-sky-100 bg-emerald-100 bg-amber-100 bg-violet-100 bg-teal-100 bg-yellow-200 text-gray-800 text-gray-600 bg-white/50 border-r border-gray-200 from-blue-700 to-blue-500 from-purple-700 to-purple-500 from-indigo-700 to-indigo-500 from-teal-700 to-teal-500 from-emerald-700 to-emerald-500 from-rose-700 to-rose-500 from-orange-600 to-orange-400"></div>
+    <!-- Container principal onde tudo será injetado após a senha -->
+    <div id="root-app" class="w-full h-full flex flex-col"></div>
 
-    <!-- Header -->
-    <header id="main-header" class="bg-gradient-to-r from-blue-700 to-blue-500 text-white shadow-lg p-4 flex justify-between items-center relative overflow-hidden">
-        <div class="absolute inset-0 bg-white/10 rotate-12 scale-150 transform -translate-y-1/2 pointer-events-none"></div>
-        <div class="flex items-center gap-3 relative z-10">
-            <i class="fas fa-graduation-cap text-3xl drop-shadow-md"></i>
-            <h1 class="text-xl sm:text-2xl font-bold tracking-tight drop-shadow-md">Média de Área de Conhecimento - IPI e GTU</h1>
-        </div>
-        <div id="status-cloud" class="flex items-center gap-2 text-sm bg-blue-900/50 backdrop-blur-sm px-4 py-2 rounded-full border border-blue-400/30 shadow-inner relative z-10 transition-all">
-            <i class="fas fa-cloud text-blue-200" id="cloud-icon"></i>
-            <span id="cloud-text" class="font-medium tracking-wide hidden sm:inline">Conectando...</span>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full flex flex-col gap-5 relative">
-        
-        <!-- Banner de Aviso -->
-        <div class="bg-amber-50 border-l-4 border-amber-400 p-4 rounded-r-md shadow-sm flex items-start sm:items-center justify-between gap-4">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-exclamation-triangle text-amber-500 text-xl mt-1 sm:mt-0"></i>
-                    <p class="text-sm text-amber-800" id="aviso-nuvem-texto">
-                        <strong>Aviso Importante:</strong> É necessário conexão com a internet para salvar na nuvem. As notas são salvas automaticamente ao digitar.
-                    </p>
-                </div>
-                <div class="mt-2 sm:mt-0 sm:ml-auto bg-amber-200 text-amber-900 font-bold px-3 py-1.5 rounded shadow-sm whitespace-nowrap border border-amber-300">
-                    <i class="fas fa-star text-amber-600 mr-1"></i> Avaliação qualitativa - 6 pontos
-                </div>
+    <!-- Tela de Login Inicial (Fica sobre tudo) -->
+    <div id="login-overlay" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-[99999]">
+        <div class="bg-white p-8 rounded-xl shadow-2xl max-w-sm w-full mx-4 text-center transform transition-all">
+            <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-shield-alt text-4xl text-blue-600"></i>
             </div>
-        </div>
-
-        <!-- Controles: Seleção de Turma e Ações -->
-        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-center gap-4 relative z-20">
-            <div class="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto flex-1">
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <label for="turma-select" class="font-bold text-slate-700 flex items-center gap-2">
-                        <i class="fas fa-users text-blue-500"></i> Turma:
-                    </label>
-                    <select id="turma-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-blue-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer min-w-[150px]">
-                        <!-- Opções injetadas via JS -->
-                    </select>
-                </div>
-                <div class="flex items-center gap-3 w-full sm:w-auto">
-                    <label for="prof-select" class="font-bold text-slate-700 flex items-center gap-2 whitespace-nowrap">
-                        <i class="fas fa-chalkboard-teacher text-purple-500"></i> Professor:
-                    </label>
-                    <select id="prof-select" class="border-2 border-slate-200 rounded-lg px-4 py-2 bg-slate-50 text-slate-700 focus:border-purple-500 focus:ring-0 outline-none flex-1 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed min-w-[150px]">
-                        <option value="Todos">Todos</option>
-                        <!-- Opções injetadas via JS -->
-                    </select>
-                </div>
-            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">Acesso Restrito</h2>
+            <p class="text-sm text-slate-500 mb-6">Área exclusiva para professores.</p>
             
-            <div class="flex items-center gap-3 w-full md:w-auto flex-wrap justify-end">
-                <button id="btn-historico" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Ver histórico de edições e restaurar backups">
-                    <i class="fas fa-history"></i> Histórico
-                </button>
-                
-                <input type="file" id="input-importar" accept=".csv" class="hidden">
-                <button id="btn-importar" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Importar arquivo CSV">
-                    <i class="fas fa-file-upload"></i> Restaurar CSV
-                </button>
-                
-                <button id="btn-exportar" class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 font-medium px-4 py-2.5 rounded-lg shadow-sm transition-all flex items-center gap-2 flex-1 sm:flex-none justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
-                    <i class="fas fa-file-csv text-green-600"></i> Backup
-                </button>
-                
-                <button id="btn-salvar" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold px-6 py-2.5 rounded-lg shadow-md hover:shadow-lg transition-all flex items-center gap-2 w-full sm:w-auto justify-center active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed" title="Cria um ponto de restauração manual">
-                    <i class="fas fa-save text-lg"></i> Salvar Alterações
-                </button>
-            </div>
-        </div>
-
-        <!-- Área Dinâmica: Instruções ou Planilha -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 flex-1 flex flex-col relative overflow-hidden min-h-[400px]">
-            
-            <!-- Inicia oculto com style="display: none;" para não bloquear a tela inicial -->
-            <div id="loading-overlay" class="absolute inset-0 bg-white/90 z-30 flex items-center justify-center" style="display: none;">
-                <div class="flex flex-col items-center text-blue-600">
-                    <i class="fas fa-spinner fa-spin text-4xl mb-3"></i>
-                    <span class="font-medium">Sincronizando dados...</span>
-                </div>
-            </div>
-
-            <!-- Tela Inicial de Instruções -->
-            <div id="instructions-container" class="flex-1 flex flex-col items-center justify-center p-8 text-center bg-slate-50 absolute inset-0 z-20">
-                <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                    <i class="fas fa-chalkboard-teacher text-5xl text-blue-500"></i>
-                </div>
-                <h2 class="text-2xl sm:text-3xl font-bold text-slate-700 mb-3">Bem-vindo(a) ao Sistema de Notas</h2>
-                <p class="text-slate-600 max-w-lg mb-6 text-lg">
-                    Para otimizar o desempenho, a planilha de notas está oculta. Por favor, <strong>selecione uma Turma</strong> no menu acima para começar a lançar ou visualizar as notas.
-                </p>
-                <div class="bg-white p-4 rounded-lg border border-slate-200 shadow-sm text-sm text-slate-500 max-w-md text-left flex items-start gap-3">
-                    <i class="fas fa-lightbulb text-amber-500 text-xl mt-0.5"></i>
-                    <p>Dica: Após selecionar a turma, também poderá selecionar um professor específico para destacar as respectivas disciplinas com cores na tabela.</p>
-                </div>
-            </div>
-
-            <!-- Planilha de Notas (Inicialmente Oculta) -->
-            <div id="table-container" class="overflow-auto flex-1 hidden w-full h-full absolute inset-0 z-10">
-                <table class="w-full text-sm text-left border-collapse min-w-[800px]">
-                    <thead id="table-head" class="text-xs text-slate-700 uppercase bg-slate-200 sticky top-0 z-40 shadow-sm">
-                        <!-- Cabeçalho injetado via JS -->
-                    </thead>
-                    <tbody id="table-body" class="divide-y divide-slate-200">
-                        <!-- Linhas injetadas via JS -->
-                    </tbody>
-                    <tfoot id="table-foot" class="bg-slate-50 border-t-4 border-slate-300">
-                        <!-- Rodapé injetado via JS -->
-                    </tfoot>
-                </table>
-            </div>
-
-        </div>
-
-    </main>
-
-    <!-- Modal de Histórico de Versões -->
-    <div id="modal-historico" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden transform scale-95 transition-transform duration-300" id="modal-historico-content">
-            <div class="px-6 py-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
-                <div>
-                    <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <i class="fas fa-history text-indigo-600"></i> Histórico de Versões (Backup Extra)
-                    </h3>
-                    <p class="text-xs text-slate-500 mt-1">Visualize as atualizações automáticas e restaure caso algo seja apagado.</p>
-                </div>
-                <button onclick="window.fecharModalHistorico()" class="text-slate-400 hover:text-red-500 transition-colors p-2 text-xl outline-none">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6 overflow-y-auto flex-1 bg-slate-50/50 custom-scrollbar" id="lista-historico">
-                <!-- Injetado via JS -->
-            </div>
-            <div class="px-6 py-4 border-t border-slate-200 bg-white flex justify-end">
-                <button onclick="window.fecharModalHistorico()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold transition-colors border border-slate-300">Fechar</button>
-            </div>
+            <button id="btn-entrar-google" class="w-full bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-bold py-3.5 rounded-lg transition-all active:scale-95 shadow-sm flex justify-center items-center gap-3">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" class="w-5 h-5">
+                Entrar com E-mail Institucional
+            </button>
+            <p id="erro-login" class="text-red-500 mt-4 hidden font-semibold text-xs bg-red-50 p-2 rounded border border-red-200 break-words">
+                <i class="fas fa-exclamation-circle"></i> <span id="texto-erro-login">Acesso negado.</span>
+            </p>
         </div>
     </div>
 
-    <!-- Toast Notification Normal -->
-    <div id="toast" class="fixed bottom-4 right-4 bg-green-800 text-white px-4 py-3 rounded shadow-lg transform translate-y-24 opacity-0 transition-all duration-300 flex items-center gap-3 z-50">
-        <i class="fas fa-check-circle"></i>
-        <span id="toast-message">Notas salvas com sucesso!</span>
-    </div>
-
-    <!-- Toast de Desfazer (Undo) -->
-    <div id="toast-desfazer" class="fixed bottom-4 right-4 bg-slate-800 text-white px-5 py-3 rounded-lg shadow-xl transform translate-y-32 opacity-0 transition-all duration-300 flex items-center gap-4 z-50 border border-slate-600">
-        <div class="flex items-center gap-2">
-            <i class="fas fa-info-circle text-blue-400 text-lg"></i>
-            <span id="toast-desfazer-msg" class="font-medium text-sm sm:text-base">Ação realizada</span>
-        </div>
-        <div class="h-6 border-l border-slate-600 mx-1"></div>
-        <button onclick="window.executarDesfazer()" class="bg-slate-700 hover:bg-slate-600 text-amber-400 border border-slate-500 px-3 py-1.5 rounded text-sm font-bold transition-all active:scale-95 flex items-center gap-2 shadow-sm">
-            <i class="fas fa-undo"></i> Desfazer
-        </button>
-        <button onclick="window.esconderToastDesfazer()" class="text-slate-400 hover:text-white ml-1 transition-colors p-1" title="Fechar">
-            <i class="fas fa-times"></i>
-        </button>
-    </div>
-
-    <!-- Firebase Scripts -->
+    <!-- ====================================================================== -->
+    <!-- TODO O CÓDIGO ABAIXO PODE SER COPIADO E JOGADO EM UM OFUSCADOR DE JS   -->
+    <!-- ====================================================================== -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, setDoc, onSnapshot, collection, deleteField } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // ============================================================================
-        // 1. CONFIGURAÇÃO DE DADOS MOCK 
+        // 0. CONTROLE DE ACESSO (E-MAILS E DOMÍNIOS PERMITIDOS)
         // ============================================================================
-        const DADOS_ESCOLA = {
-            turmas: [
-                { id: '1_IPI', nome: '1ª IPI' },
-                { id: '2_IPI', nome: '2ª IPI' },
-                { id: '2_GTU', nome: '2ª GTU' },
-                { id: '3_GTU', nome: '3ª GTU' }
-            ],
-            disciplinas: {
-                '1_IPI': [
-                    { id: '1IPI_D1', nome: 'Fundamentos da Computação', professor: 'Profª Letícia' },
-                    { id: '1IPI_D2', nome: 'Introdução ao Desenvolvimento Web', professor: 'Prof. Romerson' },
-                    { id: '1IPI_D3', nome: 'Lógica de Programação e Gamificação', professor: 'Prof. Rodrigo' }
-                ],
-                '2_IPI': [
-                    { id: '2IPI_D1', nome: 'Cultura Digital', professor: 'Profª Letícia' },
-                    { id: '2IPI_D2', nome: 'Linguagem de Programação Aplicada à Web', professor: 'Prof. Romerson' },
-                    { id: '2IPI_D3', nome: 'Banco de Dados', professor: 'Prof. Rodrigo' },
-                    { id: '2IPI_D4', nome: 'IoT - Internet of Things', professor: 'Prof. Rodrigo' }
-                ],
-                '2_GTU': [
-                    { id: '2GTU_D1', nome: 'Cultura Digital', professor: 'Profª Letícia' },
-                    { id: '2GTU_D2', nome: 'Cooperativismo', professor: 'Prof. Rodrigo' },
-                    { id: '2GTU_D4', nome: 'Eventos, Recreação e Lazer Turístico', professor: 'Prof. Caéco' },
-                    { id: '2GTU_D5', nome: 'Marketing Organizacional', professor: 'Profª Beatriz' },
-                    { id: '2GTU_D6', nome: 'Recursos Ambientais', professor: 'Profª Lorena' }
-                ],
-                '3_GTU': [
-                    { id: '3GTU_D1', nome: 'Ecoturismo', professor: 'Prof. Caéco' },
-                    { id: '3GTU_D2', nome: 'Técnicas de Trabalho para Guia de Turismo', professor: 'Prof. Caéco' },
-                    { id: '3GTU_D3', nome: 'Manifestação da Cultura Popular', professor: 'Prof. Caéco' },
-                    { id: '3GTU_D4', nome: 'Comunicação e Branding', professor: 'Profª Beatriz' },
-                    { id: '3GTU_D5', nome: 'E-commerce', professor: 'Profª Beatriz' }
-                ]
-            },
-            alunos: {
-                '1_IPI': [
-                    { id: '1IPI_1', nome: 'ALLICIA PINHEIRO FARIA FELIX' },
-                    { id: '1IPI_2', nome: 'BEATRIZ MARCILIO SILVA' },
-                    { id: '1IPI_3', nome: 'DIENIFFER PRATA DE SOUZA' },
-                    { id: '1IPI_4', nome: 'ELOA HERCULANO DE MENEZES' },
-                    { id: '1IPI_5', nome: 'GABRIEL DIAS DE SOUZA' },
-                    { id: '1IPI_6', nome: 'GABRIELLE MARTINS DE QUEIROZ' },
-                    { id: '1IPI_7', nome: 'IARA PRATA DOS SANTOS' },
-                    { id: '1IPI_8', nome: 'IARA RAMOS RODRIGUES' },
-                    { id: '1IPI_9', nome: 'JULIA APARECIDA MENDES DOS SANTOS XAVIER' },
-                    { id: '1IPI_10', nome: 'JULIANA BRAGANCA PALACIO DA SILVA' },
-                    { id: '1IPI_11', nome: 'JULIANA NEVES ANEQUIM' },
-                    { id: '1IPI_12', nome: 'KAMILLY VITORIA ESTRELA ZAMPILLI' },
-                    { id: '1IPI_13', nome: 'KAUAN PEREIRA MARVILA' },
-                    { id: '1IPI_14', nome: 'LARISSA MOREIRA GARCIA' },
-                    { id: '1IPI_15', nome: 'LETICIA SANTOS DE MENEZES' },
-                    { id: '1IPI_16', nome: 'LUIZ PHELIPE RIBEIRO CORREIA' },
-                    { id: '1IPI_17', nome: 'MANUELA FERNANDES DE SOUZA' },
-                    { id: '1IPI_18', nome: 'MARCELLY LUPARELLI MACHADO' },
-                    { id: '1IPI_19', nome: 'MARIA CLARA FERNANDES BITENCOURT' },
-                    { id: '1IPI_20', nome: 'MARIA CLARA HERCULANO ROSA' },
-                    { id: '1IPI_21', nome: 'MARIA FERNANDA XAVIER PALACIO' },
-                    { id: '1IPI_22', nome: 'MARIA VITORIA SANTANA DOS SANTOS CORREA' },
-                    { id: '1IPI_23', nome: 'MARIANA ARAUJO DA SILVA' },
-                    { id: '1IPI_24', nome: 'MATEUS BITENCOURT FERREIRA' },
-                    { id: '1IPI_25', nome: 'MAYARA PIONELLI GUALANDE' },
-                    { id: '1IPI_26', nome: 'MAYRA MONTEIRO ALVES' },
-                    { id: '1IPI_27', nome: 'MAYRON VICTOR VIEIRA NEVES RAIMUNDO' },
-                    { id: '1IPI_28', nome: 'NATHALIA ELIAS CABRAL' },
-                    { id: '1IPI_29', nome: 'PEDRO HIGOR DA SILVA CIRILIO' },
-                    { id: '1IPI_30', nome: 'PEDRO LUCAS LIMA DOS SANTOS' },
-                    { id: '1IPI_31', nome: 'RAFAEL DE ARAUJO STANEK' },
-                    { id: '1IPI_32', nome: 'RAFAELA BERCACO FELIX' },
-                    { id: '1IPI_33', nome: 'RAFAELLA SILVA LOPES' },
-                    { id: '1IPI_34', nome: 'RAFAELLI SIQUEIRA AZEVEDO' },
-                    { id: '1IPI_35', nome: 'THALLIS DE SOUZA LIVIO' },
-                    { id: '1IPI_36', nome: 'THAYANE BISPO LEAO' },
-                    { id: '1IPI_37', nome: 'VALENTINNA DE AZEVEDO CORREIA' },
-                    { id: '1IPI_38', nome: 'YASMIN CAMPOS DE OLIVEIRA' },
-                    { id: '1IPI_39', nome: 'YUD CORREA RODRIGUES MAZZA PEREIRA' },
-                    { id: '1IPI_40', nome: 'LUCAS CATTEM VALLE' }
-                ],
-                '2_IPI': [
-                    { id: '2IPI_1', nome: 'ALLETSON PIRES FLORIANO DA SILVA' },
-                    { id: '2IPI_2', nome: 'ALLYSTER LIVRAMENTO DA SILVA NASCIMENTO' },
-                    { id: '2IPI_3', nome: 'ANA CLARA CORREIA MENDONCA' },
-                    { id: '2IPI_4', nome: 'ANA CLARA VENCIONECK MORENO' },
-                    { id: '2IPI_5', nome: 'AQUILA SIMOES DIAS' },
-                    { id: '2IPI_6', nome: 'BIANCA RIBEIRO SILVA JUMETTI' },
-                    { id: '2IPI_7', nome: 'BRYAN MONTEIRO BLUNCK' },
-                    { id: '2IPI_8', nome: 'DAFNI VERLY DE ABREU' },
-                    { id: '2IPI_9', nome: 'DANIELLA ALMEIDA FONTOURA' },
-                    { id: '2IPI_10', nome: 'DAVI LAZARINI AZEVEDO' },
-                    { id: '2IPI_11', nome: 'DELAIAS CARVALHO BRITES' },
-                    { id: '2IPI_12', nome: 'EMANUELLY ROCHA FARIA' },
-                    { id: '2IPI_13', nome: 'EVILLYN APARECIDA TOREZANI FERREIRA' },
-                    { id: '2IPI_14', nome: 'GIOVANNI PONTICELLI PAVANI' },
-                    { id: '2IPI_15', nome: 'GUILHERME BERNARDO GONCALVES THOMAZ' },
-                    { id: '2IPI_16', nome: 'GUILHERME FURTADO DE ARAUJO MARQUES' },
-                    { id: '2IPI_17', nome: 'HEDER OLIVEIRA DE SOUZA' },
-                    { id: '2IPI_18', nome: 'HEITOR DA SILVA SOUZA' },
-                    { id: '2IPI_19', nome: 'HENRY MARTINS DA SILVA LOUCANA' },
-                    { id: '2IPI_20', nome: 'HIURY DA SILVA GUALANDE' },
-                    { id: '2IPI_21', nome: 'ITALO GARCIA NASCIMENTO' },
-                    { id: '2IPI_22', nome: 'LARISSA SOUZA DA SILVA' },
-                    { id: '2IPI_23', nome: 'LAYS LOURENCO FERREIRA' },
-                    { id: '2IPI_24', nome: 'LEANDRO RIBEIRO DA SILVA ALMEIDA SANTANA BATISTA' },
-                    { id: '2IPI_25', nome: 'LETICIA BENTO RICHARDELLI' },
-                    { id: '2IPI_26', nome: 'LYNCON PALACIO DE OLIVEIRA' },
-                    { id: '2IPI_27', nome: 'MARCELA CABRAL BONZE' },
-                    { id: '2IPI_28', nome: 'MARIA EDUARDA SANTIAGO FERNANDES' },
-                    { id: '2IPI_29', nome: 'MARIANA DA SILVA TEIXEIRA' },
-                    { id: '2IPI_30', nome: 'MICKELLY DE PAULA BALBINO' },
-                    { id: '2IPI_31', nome: 'NATHALYA MARIA LOPES DIAS' },
-                    { id: '2IPI_32', nome: 'RAFAEL JUNIOR PELAZ DA SILVA PONTICELLI' },
-                    { id: '2IPI_33', nome: 'RAFAEL RIBEIRO MONTOZO' },
-                    { id: '2IPI_34', nome: 'RAYSSA MENGALI PEREIRA BALTAZAR' },
-                    { id: '2IPI_35', nome: 'RYAN DA SILVA CORREIA' },
-                    { id: '2IPI_36', nome: 'WESLEY ALMEIDA COSTA' }
-                ],
-                '2_GTU': [
-                    { id: '2GTU_1', nome: 'ANNA VICTORYA THOMAZ DA SILVA' },
-                    { id: '2GTU_2', nome: 'CRISTIANA SARDENBERG GATTE' },
-                    { id: '2GTU_3', nome: 'EDNEY DE ALMEIDA SILVA' },
-                    { id: '2GTU_4', nome: 'ELIANA POUBEL DA LUZ CRECENCIO' },
-                    { id: '2GTU_5', nome: 'EROS PIMENTA EMERENCIANO' },
-                    { id: '2GTU_6', nome: 'EVANDRO DA SILVA PAULA' },
-                    { id: '2GTU_7', nome: 'FABIANI MARINS PELICIONI' },
-                    { id: '2GTU_8', nome: 'GIULLIA TAVARES BARBOZA DE LIMA' },
-                    { id: '2GTU_9', nome: 'ISABELLY ALVES ANIBAL PACIENCIA' },
-                    { id: '2GTU_10', nome: 'JULIA DIAS DE ALMEIDA PEREVEZON' },
-                    { id: '2GTU_11', nome: 'KAIQUE MARCELINO DE SOUZA' },
-                    { id: '2GTU_12', nome: 'KASSYANNE MEDEIROS THOMAZ' },
-                    { id: '2GTU_13', nome: 'KAUAN RODRIGUES COUTO' },
-                    { id: '2GTU_14', nome: 'KETELIN ESTEVES DE SOUZA' },
-                    { id: '2GTU_15', nome: 'KRYSTYAN AMORIM MONTOVANI' },
-                    { id: '2GTU_16', nome: 'LAUANI SILVA FREITAS' },
-                    { id: '2GTU_17', nome: 'MAIANNY DIAS MONTEIRO' },
-                    { id: '2GTU_18', nome: 'MARCOS PAULO CASSAGO DA SILVA' },
-                    { id: '2GTU_19', nome: 'MARIA EDUARDA FERREIRA SOARES' },
-                    { id: '2GTU_20', nome: 'MATEUS DOS SANTOS MENDONCA' },
-                    { id: '2GTU_21', nome: 'MATEUS FERNANDO DA SILVA PASTOR' },
-                    { id: '2GTU_22', nome: 'MIGUEL FIGUEIRA GARCIA DE OLIVEIRA' },
-                    { id: '2GTU_23', nome: 'MIGUEL MARTINS DE ARAUJO' },
-                    { id: '2GTU_24', nome: 'MIGUEL POUBEL FRANCA RODRIGUES' },
-                    { id: '2GTU_25', nome: 'MURILO SOUSA DE ARAUJO CLEMENTE' },
-                    { id: '2GTU_26', nome: 'PYETRO GONCALVES GUALANDI' },
-                    { id: '2GTU_27', nome: 'RAFAEL DA SILVA FAGUNDES' },
-                    { id: '2GTU_28', nome: 'RONALD MATEINE BRAGANCA MELLO DOS SANTOS' },
-                    { id: '2GTU_29', nome: 'SHERON EVELYN VIEIRA CORREA' },
-                    { id: '2GTU_30', nome: 'THARCIELLY FERNANDES NARDUCI' },
-                    { id: '2GTU_31', nome: 'VITOR DOMINGOS VERLY MORAES' },
-                    { id: '2GTU_32', nome: 'YASMIN DE BARROS E BARROS GRANELLI' }
-                ],
-                '3_GTU': [
-                    { id: '3GTU_1', nome: 'AGATHA LUCIANO BORGES' },
-                    { id: '3GTU_2', nome: 'AMANDA FERREIRA MARTINS BITENCOURT' },
-                    { id: '3GTU_3', nome: 'ANA FLAVIA OLIVEIRA FERREIRA' },
-                    { id: '3GTU_4', nome: 'ANA LUIZA LUCINDO MARTINS' },
-                    { id: '3GTU_5', nome: 'HUGO DE ASSIS PEREIRA' },
-                    { id: '3GTU_6', nome: 'ILBHERTY MENDES PASSINI MATEINI DA SILVA' },
-                    { id: '3GTU_7', nome: 'JULIA TEIXEIRA DA SILVA' },
-                    { id: '3GTU_8', nome: 'LAILA MELLO ARAUJO MAINARDI MOTTA' },
-                    { id: '3GTU_9', nome: 'LARA MAGANHA MONTEIRO' },
-                    { id: '3GTU_10', nome: 'LAVINIA BRAGANCA DA SILVA' },
-                    { id: '3GTU_11', nome: 'LIVIA LOURENCO DE ANDRADE CAMPOS' },
-                    { id: '3GTU_12', nome: 'LUCAS GABRIEL DE OLIVEIRA ARTIGAS' },
-                    { id: '3GTU_13', nome: 'MARIA THEREZA DE MEDEIROS RAMOS' },
-                    { id: '3GTU_14', nome: 'RAFAEL DE JESUS DAVID' },
-                    { id: '3GTU_15', nome: 'REBECA MACHADO LUPARELLI MACEDO' },
-                    { id: '3GTU_16', nome: 'RYANN PALACIO DIAS' }
-                ]
-            }
-        };
+        
+        // COLOQUE AQUI O FINAL DO E-MAIL INSTITUCIONAL DA SUA ESCOLA
+        // Exemplo: se o email é professor@edu.escola.br, coloque "@edu.escola.br"
+        // Qualquer pessoa logada com um email do Google terminando nisso vai entrar.
+        const DOMINIO_PERMITIDO = "educador.edu.es.gov.br"; 
+        
+        // Mantive a lista caso você queira permitir e-mails pessoais específicos como exceção
+        const EMAILS_PERMITIDOS = [
+            "rodrigopelages@gmail.com"
+        ];
 
-        // Estado da aplicação
+        // Bloquear botão direito do mouse
+        document.addEventListener('contextmenu', event => event.preventDefault());
+
+        // Bloquear atalhos de teclado de desenvolvedor (F12, Inspecionar, Ver Código Fonte)
+        document.addEventListener('keydown', function(e) {
+            // F12
+            if (e.key === 'F12' || e.keyCode === 123) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+I (Inspecionar)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.keyCode === 73)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+J (Console)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'J' || e.key === 'j' || e.keyCode === 74)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+Shift+C (Inspecionar Elemento)
+            if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c' || e.keyCode === 67)) {
+                e.preventDefault();
+                return false;
+            }
+            // Ctrl+U (Ver código fonte)
+            if (e.ctrlKey && (e.key === 'U' || e.key === 'u' || e.keyCode === 85)) {
+                e.preventDefault();
+                return false;
+            }
+            // Evitar impressão (Ctrl+P) opcional
+            if (e.ctrlKey && (e.key === 'P' || e.key === 'p' || e.keyCode === 80)) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // ============================================================================
+        // 3. LÓGICA DE LOGIN COM GOOGLE E CONTROLE DE USUÁRIO
+        // ============================================================================
         let estado = {
             turmaSelecionada: '', 
             professorSelecionado: 'Todos',
             notas: {},
-            historico: [] // Array para guardar as versões
+            historico: [],
+            usuarioLogado: null // Guarda quem está usando o sistema agora
         };
 
         const CORES_PROFESSORES = {
-            'Profª Letícia': 'bg-pink-100',
-            'Prof. Romerson': 'bg-sky-100',
-            'Prof. Rodrigo': 'bg-emerald-100',
-            'Prof. Caéco': 'bg-amber-100',
-            'Profª Beatriz': 'bg-violet-100',
-            'Profª Lorena': 'bg-teal-100'
+            'Profª Letícia': 'bg-pink-100', 'Prof. Romerson': 'bg-sky-100',
+            'Prof. Rodrigo': 'bg-emerald-100', 'Prof. Caéco': 'bg-amber-100',
+            'Profª Beatriz': 'bg-violet-100', 'Profª Lorena': 'bg-teal-100'
         };
 
-        // Estado Global para Desfazer (Undo Rápido)
         let estadoDesfazer = null;
         let timerDesfazer = null;
-
-        // ============================================================================
-        // 2. CONFIGURAÇÃO DO FIREBASE (BANCO DE DADOS EM NUVEM)
-        // ============================================================================
         let db, auth;
         let userId = null;
         let dadosCarregadosInicialmente = false; 
-        let isSaving = false; 
+        let isSaving = false;
 
-        async function inicializarFirebase() {
+        async function inicializarAppEFirebase() {
             try {
-                let firebaseConfig;
-                if (typeof __firebase_config !== 'undefined') {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                } else {
-                    firebaseConfig = {
-                        // A CHAVE FOI DIVIDIDA AQUI PARA EVITAR O BLOQUEIO DO GITHUB
-                        apiKey: "AIzaSy" + "B5pYi6Et_Q4ZShfDXusLNwiZdyFwqm7SI",
-                        authDomain: "media-de-area.firebaseapp.com",
-                        projectId: "media-de-area",
-                        storageBucket: "media-de-area.firebasestorage.app",
-                        messagingSenderId: "136992091036",
-                        appId: "1:136992091036:web:fd35efbbb11ec978c07659",
-                        measurementId: "G-2XLDLLSCSQ"
-                    };
-                }
-
-                if (firebaseConfig.apiKey === "SUA_API_KEY" || firebaseConfig.apiKey.includes("exemplo")) {
-                    console.warn("Chaves do Firebase não configuradas.");
-                    atualizarStatusNuvem(false, "Falta Configurar Firebase");
-                    document.getElementById('loading-overlay').style.display = 'none';
-                    dadosCarregadosInicialmente = true;
-                    return; 
-                }
+                let firebaseConfig = {
+                    apiKey: "AIzaSy" + "B5pYi6Et_Q4ZShfDXusLNwiZdyFwqm7SI",
+                    authDomain: "media-de-area.firebaseapp.com",
+                    projectId: "media-de-area",
+                    storageBucket: "media-de-area.firebasestorage.app",
+                    messagingSenderId: "136992091036",
+                    appId: "1:136992091036:web:fd35efbbb11ec978c07659",
+                    measurementId: "G-2XLDLLSCSQ"
+                };
 
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getFirestore(app);
 
-                try {
-                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                        await signInWithCustomToken(auth, __initial_auth_token);
-                    } else {
-                        await signInAnonymously(auth);
-                    }
-                } catch (authErro) {
-                    console.error("Erro no Auth:", authErro);
-                    throw authErro; 
-                }
+                // Configura o botão do Google
+                document.getElementById('btn-entrar-google').addEventListener('click', fazerLoginComGoogle);
 
-                onAuthStateChanged(auth, (user) => {
+                // Ouve as mudanças de autenticação do Firebase (Detecta se o usuário já fez login antes)
+                onAuthStateChanged(auth, async (user) => {
                     if (user) {
-                        userId = user.uid;
-                        atualizarStatusNuvem(true, "Conectado");
-                        escutarDadosDoBanco();
+                        const emailUsuario = user.email.toLowerCase();
+                        
+                        // Verifica se o domínio bate OU se está na lista de e-mails permitidos
+                        const dominioOk = DOMINIO_PERMITIDO !== "" && emailUsuario.endsWith(DOMINIO_PERMITIDO.toLowerCase());
+                        const emailOk = EMAILS_PERMITIDOS.map(e => e.toLowerCase()).includes(emailUsuario);
+
+                        if (dominioOk || emailOk) {
+                            userId = user.uid;
+                            // Salva os dados do usuário para registrar no histórico depois
+                            estado.usuarioLogado = { nome: user.displayName, email: user.email };
+
+                            document.getElementById('login-overlay').style.display = 'none';
+                            document.getElementById('app-body').classList.remove('overflow-hidden');
+                            
+                            // Carrega a interface do app apenas uma vez
+                            if (!document.getElementById('main-header')) {
+                                document.getElementById('root-app').innerHTML = APP_HTML_TEMPLATE;
+                                iniciarSistemaDeFato(user);
+                            }
+                            
+                            atualizarStatusNuvem(true, "Conectado");
+                            escutarDadosDoBanco();
+                        } else {
+                            // Se logou com um e-mail de fora da lista/domínio, expulsa imediatamente
+                            await signOut(auth);
+                            mostrarErroLogin(`O e-mail (${emailUsuario}) não pertence ao domínio institucional permitido.`);
+                        }
                     } else {
+                        // Ninguém logado, mostra o botão do Google
                         userId = null;
-                        atualizarStatusNuvem(false, "Desconectado");
+                        estado.usuarioLogado = null;
+                        document.getElementById('login-overlay').style.display = 'flex';
+                        document.getElementById('root-app').innerHTML = ''; 
                     }
                 });
             } catch (erro) {
-                console.error("Erro ao inicializar banco de dados:", erro);
-                atualizarStatusNuvem(false, "Erro de Conexão");
-                document.getElementById('loading-overlay').style.display = 'none';
-                dadosCarregadosInicialmente = true;
+                console.error("Erro Firebase:", erro);
+                mostrarErroLogin("Erro de conexão com o banco de dados.");
             }
+        }
+
+        async function fazerLoginComGoogle() {
+            const provider = new GoogleAuthProvider();
+            // provider.setCustomParameters({ hd: 'escola.edu.br' }); // Se tiver domínio, tire o "//" do início dessa linha para forçar login institucional
+            try {
+                document.getElementById('erro-login').classList.add('hidden');
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Erro no login:", error);
+                if (error.code !== 'auth/popup-closed-by-user') {
+                    mostrarErroLogin(`Erro: ${error.code}. Verifique se o domínio está autorizado no Firebase.`);
+                } else {
+                    mostrarErroLogin("O pop-up de login foi fechado ou bloqueado pelo navegador.");
+                }
+            }
+        }
+
+        function mostrarErroLogin(mensagem) {
+            const erro = document.getElementById('erro-login');
+            const textoErro = document.getElementById('texto-erro-login');
+            
+            textoErro.textContent = mensagem;
+            erro.classList.remove('hidden');
+            
+            // Efeito visual de erro
+            const card = erro.parentElement;
+            card.classList.add('translate-x-2');
+            setTimeout(() => card.classList.remove('translate-x-2'), 100);
+            setTimeout(() => card.classList.add('-translate-x-2'), 200);
+            setTimeout(() => card.classList.remove('-translate-x-2'), 300);
+        }
+
+        function iniciarSistemaDeFato(usuario) {
+            // Estética
+            const header = document.getElementById('main-header');
+            const gradientsPairs = [['from-blue-700', 'to-blue-500'], ['from-purple-700', 'to-purple-500'], ['from-indigo-700', 'to-indigo-500'], ['from-teal-700', 'to-teal-500']];
+            header.classList.add(...gradientsPairs[Math.floor(Math.random() * gradientsPairs.length)]);
+
+            // Mapear Modais
+            document.getElementById('btn-fechar-historico').addEventListener('click', fecharModalHistorico);
+            document.getElementById('btn-desfazer-acao').addEventListener('click', executarDesfazer);
+            document.getElementById('btn-fechar-desfazer').addEventListener('click', esconderToastDesfazer);
+
+            // Botão de Logout (Sair)
+            if (!document.getElementById('btn-sair-sistema')) {
+                const btnSair = document.createElement('button');
+                btnSair.id = 'btn-sair-sistema';
+                btnSair.innerHTML = `<i class="fas fa-sign-out-alt"></i> Sair (${usuario.displayName.split(' ')[0]})`;
+                btnSair.className = "bg-red-500/20 hover:bg-red-500 text-white text-sm px-3 py-1.5 rounded ml-3 transition-colors border border-red-500/30 font-semibold";
+                btnSair.onclick = () => signOut(auth);
+                document.getElementById('main-header').appendChild(btnSair);
+            }
+
+            inicializarInterface();
         }
 
         function escutarDadosDoBanco() {
             if (!userId) return;
-            
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
+            const docRef = doc(db, 'artifacts', 'sistema-diario-notas', 'public', 'data', 'registros_diarios', 'notas_gerais');
 
             onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
-                    // Substitui os dados locais pelo banco de dados sempre atualizado
                     estado.notas = docSnap.data().notas || {};
                     estado.historico = docSnap.data().historico || [];
                 } else {
-                    estado.notas = {};
-                    estado.historico = [];
+                    estado.notas = {}; estado.historico = [];
                 }
                 
                 document.getElementById('loading-overlay').style.display = 'none';
-                
                 if (!dadosCarregadosInicialmente) {
                     dadosCarregadosInicialmente = true;
                     renderizarPlanilha(); 
                 } else if (estado.turmaSelecionada) {
                     atualizarValoresNaTela();
                 }
-            }, (erro) => {
-                console.error("Erro ao escutar dados:", erro);
-                atualizarStatusNuvem(false, "Erro de Sincronia");
-                document.getElementById('loading-overlay').style.display = 'none';
-                dadosCarregadosInicialmente = true;
             });
         }
 
-        // Função dedicada a guardar instantaneamente uma única célula alterada (Em Tempo Real)
         async function salvarNotaIndividualNoBanco(chave, valor) {
             if (!userId) return;
             atualizarStatusNuvem(true, "Salvando...");
-
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
-            
+            const docRef = doc(db, 'artifacts', 'sistema-diario-notas', 'public', 'data', 'registros_diarios', 'notas_gerais');
             try {
                 const payload = { notas: {} };
-                // Se o valor for null (célula apagada), usamos o comando nativo do Firebase para remover a chave
                 payload.notas[chave] = valor !== null ? valor : deleteField();
-
                 await setDoc(docRef, payload, { merge: true });
                 atualizarStatusNuvem(true, "Salvo na nuvem");
-            } catch (erro) {
-                console.error("Erro ao salvar célula:", erro);
-                atualizarStatusNuvem(false, "Erro ao salvar");
-            }
+            } catch (e) { atualizarStatusNuvem(false, "Erro ao salvar"); }
         }
 
-        // Função para salvar em lote (várias células ao mesmo tempo) - Usado no preencher/limpar coluna
         async function salvarBatchNoBanco(payload) {
             if (!userId) return;
             atualizarStatusNuvem(true, "Salvando lote...");
-            
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
-            
-            try {
-                await setDoc(docRef, payload, { merge: true });
-                atualizarStatusNuvem(true, "Salvo na nuvem");
-            } catch (erro) {
-                console.error("Erro ao salvar lote:", erro);
-                atualizarStatusNuvem(false, "Erro ao salvar");
-            }
+            const docRef = doc(db, 'artifacts', 'sistema-diario-notas', 'public', 'data', 'registros_diarios', 'notas_gerais');
+            await setDoc(docRef, payload, { merge: true });
+            atualizarStatusNuvem(true, "Salvo");
         }
 
-        // Sistema de Versionamento Inteligente (Histórico)
-        window.registrarNoHistorico = async function(descricao) {
+        // REGISTRA NO HISTÓRICO COM O NOME E E-MAIL DO PROFESSOR
+        async function registrarNoHistorico(descricao) {
             if (!userId) return;
-            
-            const qtdNotas = Object.keys(estado.notas).length;
             const snapshot = {
                 id: Date.now().toString(),
                 data: new Date().toLocaleString('pt-BR'),
                 descricao: descricao,
-                qtdNotas: qtdNotas,
-                notas: JSON.parse(JSON.stringify(estado.notas)) // Cópia profunda segura das notas
+                autor: estado.usuarioLogado ? estado.usuarioLogado.nome : 'Desconhecido',
+                email: estado.usuarioLogado ? estado.usuarioLogado.email : 'sem-email',
+                qtdNotas: Object.keys(estado.notas).length,
+                notas: JSON.parse(JSON.stringify(estado.notas))
             };
             
-            if (!estado.historico) estado.historico = [];
+            if (estado.historico.length > 0 && JSON.stringify(estado.historico[0].notas) === JSON.stringify(snapshot.notas)) return;
             
-            // Evita salvar um histórico idêntico ao último se não houver mudanças nas notas
-            if (estado.historico.length > 0) {
-                const ultimo = estado.historico[0];
-                if (JSON.stringify(ultimo.notas) === JSON.stringify(snapshot.notas) && ultimo.descricao === descricao) {
-                    return; 
-                }
-            }
-
-            estado.historico.unshift(snapshot); // Adiciona no início da lista
-            if (estado.historico.length > 25) estado.historico.pop(); // Mantém apenas as últimas 25 versões
-
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
-            
-            // Salva apenas o array de histórico no banco
+            estado.historico.unshift(snapshot);
+            if (estado.historico.length > 25) estado.historico.pop();
+            const docRef = doc(db, 'artifacts', 'sistema-diario-notas', 'public', 'data', 'registros_diarios', 'notas_gerais');
             await setDoc(docRef, { historico: estado.historico }, { merge: true });
-        };
-
-        // O botão de salvar massivo agora serve mais como precaução e gera um ponto de restauração manual
-        async function salvarDadosNoBanco(mostrarAviso = false) {
-            if (!userId) return;
-            if (isSaving && mostrarAviso) return;
-            
-            isSaving = true;
-            atualizarStatusNuvem(true, "Salvando...");
-            const btnSalvar = document.getElementById('btn-salvar');
-            
-            if (mostrarAviso) {
-                btnSalvar.innerHTML = '<i class="fas fa-spinner fa-spin text-lg"></i> Salvando...';
-                btnSalvar.disabled = true;
-            }
-
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
-            
-            try {
-                const operacaoSalvar = setDoc(docRef, { notas: estado.notas }, { merge: true });
-                const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout")), 8000));
-                await Promise.race([operacaoSalvar, timeout]);
-                
-                atualizarStatusNuvem(true, "Salvo na nuvem");
-                
-                // Cria um ponto de histórico apenas se foi um clique manual
-                if (mostrarAviso) {
-                    await window.registrarNoHistorico(`Ponto de Restauração (Salvo Manualmente)`);
-                    mostrarToast();
-                }
-            } catch (erro) {
-                console.error("Erro ao salvar tudo:", erro);
-                atualizarStatusNuvem(false, "Erro ao salvar");
-                if (mostrarAviso) alert("Tempo limite excedido ao salvar todos os dados.");
-            } finally {
-                isSaving = false;
-                if (mostrarAviso) {
-                    btnSalvar.innerHTML = '<i class="fas fa-save text-lg"></i> Salvar Alterações';
-                    btnSalvar.disabled = false;
-                }
-            }
         }
 
-        // ============================================================================
-        // Auto-Backup Silencioso
-        // ============================================================================
-        // A cada 10 minutos (600000 ms), o sistema verifica se houveram mudanças e salva no histórico
+        async function salvarDadosNoBanco(mostrarAviso = false) {
+            if (!userId || isSaving) return;
+            isSaving = true;
+            const docRef = doc(db, 'artifacts', 'sistema-diario-notas', 'public', 'data', 'registros_diarios', 'notas_gerais');
+            try {
+                await setDoc(docRef, { notas: estado.notas }, { merge: true });
+                if (mostrarAviso) { 
+                    await registrarNoHistorico("Ponto Restauração Manual"); 
+                    mostrarToast(); 
+                }
+            } finally { isSaving = false; }
+        }
+
+        // Auto Backup com rastreio de autor
         setInterval(async () => {
             if (!userId || !estado.historico) return;
-            
-            const notasAtuaisStr = JSON.stringify(estado.notas);
-            const ultimasNotasStr = estado.historico.length > 0 ? JSON.stringify(estado.historico[0].notas) : "{}";
-            
-            if (notasAtuaisStr !== ultimasNotasStr) {
-                await window.registrarNoHistorico("Auto-backup de segurança (Sistema)");
+            const atual = JSON.stringify(estado.notas);
+            const antigo = estado.historico.length > 0 ? JSON.stringify(estado.historico[0].notas) : "{}";
+            if (atual !== antigo) {
+                const nomeUsuario = estado.usuarioLogado ? estado.usuarioLogado.nome : 'Sistema';
+                await registrarNoHistorico(`Auto-backup (${nomeUsuario})`);
             }
         }, 600000);
 
-        // ============================================================================
-        // 3. LÓGICA DE INTERFACE, AÇÕES RÁPIDAS E DESFAZER
-        // ============================================================================
-
-        // Janela Modal do Histórico
-        window.abrirModalHistorico = function() {
+        function abrirModalHistorico() {
             const modal = document.getElementById('modal-historico');
-            const content = document.getElementById('modal-historico-content');
             const lista = document.getElementById('lista-historico');
-
             lista.innerHTML = '';
-            if (!estado.historico || estado.historico.length === 0) {
-                lista.innerHTML = `
-                    <div class="text-center text-slate-500 py-12 flex flex-col items-center">
-                        <div class="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mb-4">
-                            <i class="fas fa-history text-3xl text-slate-400"></i>
-                        </div>
-                        <p class="font-medium text-lg text-slate-600">Nenhum ponto de restauração encontrado.</p>
-                        <p class="text-sm mt-2 max-w-md">O sistema criará versões automaticamente a cada 10 minutos ou quando preencher colunas, restaurar backups ou clicar em "Salvar Alterações".</p>
-                    </div>`;
+            
+            if (estado.historico.length === 0) {
+                lista.innerHTML = `<p class="text-center p-8 text-slate-500">Nenhum backup encontrado.</p>`;
             } else {
-                estado.historico.forEach(versao => {
-                    const qtd = versao.qtdNotas !== undefined ? versao.qtdNotas : Object.keys(versao.notas).length;
+                estado.historico.forEach(v => {
                     lista.innerHTML += `
-                        <div class="bg-white border border-slate-200 rounded-lg p-4 mb-3 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-indigo-300 transition-colors">
+                        <div class="bg-white border rounded p-4 mb-2 flex justify-between items-start sm:items-center flex-col sm:flex-row gap-3">
                             <div>
-                                <h4 class="font-bold text-slate-800 text-lg">${versao.descricao}</h4>
-                                <p class="text-sm text-slate-500 mt-1"><i class="far fa-clock mr-1"></i> Salvo em: ${versao.data}</p>
-                                <p class="text-xs text-indigo-600 font-semibold mt-1 bg-indigo-50 inline-block px-2 py-0.5 rounded border border-indigo-100"><i class="fas fa-database mr-1"></i> ${qtd} notas salvas nesta versão</p>
+                                <strong class="text-slate-800">${v.descricao}</strong><br>
+                                <small class="text-slate-500"><i class="far fa-clock"></i> ${v.data}</small><br>
+                                <small class="text-blue-600 font-medium"><i class="fas fa-user-edit"></i> ${v.autor || 'Sistema'} (${v.email || ''})</small>
                             </div>
-                            <button onclick="window.restaurarVersaoHistorico('${versao.id}')" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-5 py-2.5 rounded-lg font-semibold text-sm transition-all active:scale-95 whitespace-nowrap w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm">
-                                <i class="fas fa-undo-alt"></i> Restaurar
-                            </button>
-                        </div>
-                    `;
+                            <button class="btn-restaurar-v bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-4 py-2 rounded font-semibold transition-colors shadow-sm" data-id="${v.id}">Restaurar</button>
+                        </div>`;
+                });
+                
+                document.querySelectorAll('.btn-restaurar-v').forEach(btn => {
+                    btn.addEventListener('click', (e) => restaurarVersao(e.target.dataset.id));
                 });
             }
-
             modal.classList.remove('hidden');
             modal.classList.add('flex');
-            setTimeout(() => {
-                content.classList.remove('scale-95');
-                content.classList.add('scale-100');
-            }, 10);
-        };
+        }
 
-        window.fecharModalHistorico = function() {
-            const modal = document.getElementById('modal-historico');
-            const content = document.getElementById('modal-historico-content');
-            content.classList.remove('scale-100');
-            content.classList.add('scale-95');
-            setTimeout(() => {
-                modal.classList.remove('flex');
-                modal.classList.add('hidden');
-            }, 300);
-        };
+        function fecharModalHistorico() {
+            document.getElementById('modal-historico').classList.add('hidden');
+            document.getElementById('modal-historico').classList.remove('flex');
+        }
 
-        // Função para aplicar uma versão antiga
-        window.restaurarVersaoHistorico = async function(id) {
-            const versao = estado.historico.find(v => v.id === id);
-            if (!versao) return;
-
-            if (!confirm(`Deseja realmente restaurar a planilha para o estado de: ${versao.data}?\nIsso substituirá as notas atuais na tela.`)) return;
-
-            window.fecharModalHistorico();
-            document.getElementById('loading-overlay').style.display = 'flex';
-
-            // Cria um backup de segurança do estado atual ANTES de aplicar o antigo
-            await window.registrarNoHistorico(`Backup automático antes de restaurar a versão de ${versao.data}`);
-
-            // Aplica a versão
-            estado.notas = JSON.parse(JSON.stringify(versao.notas));
+        async function restaurarVersao(id) {
+            const v = estado.historico.find(x => x.id === id);
+            if (!v || !confirm("Restaurar esta versão? As notas atuais serão perdidas.")) return;
+            
+            fecharModalHistorico();
+            await registrarNoHistorico(`Backup antes de restaurar ${v.data}`);
+            estado.notas = JSON.parse(JSON.stringify(v.notas));
             renderizarPlanilha();
-
-            // Salva na nuvem
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'sistema-diario-notas';
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'registros_diarios', 'notas_gerais');
+            
+            const docRef = doc(db, 'artifacts', 'sistema-diario-notas', 'public', 'data', 'registros_diarios', 'notas_gerais');
             await setDoc(docRef, { notas: estado.notas }, { merge: true });
+            mostrarToast("Versão restaurada!");
+        }
 
-            document.getElementById('loading-overlay').style.display = 'none';
-            const toast = document.getElementById('toast-message');
-            toast.textContent = "Versão restaurada com sucesso!";
-            mostrarToast();
-            setTimeout(() => toast.textContent = "Notas salvas com sucesso!", 3500); // Reseta
-        };
-
-        // Sistema de Desfazer Rápido (Undo do balãozinho)
-        window.salvarEstadoDesfazer = function(notasOriginais, mensagem) {
+        function salvarEstadoDesfazer(notasOriginais, msg) {
             estadoDesfazer = notasOriginais;
-            const toastInfo = document.getElementById('toast-desfazer');
-            const toastMsg = document.getElementById('toast-desfazer-msg');
-            
-            toastMsg.textContent = mensagem;
-            toastInfo.classList.remove('translate-y-32', 'opacity-0');
-            
+            document.getElementById('toast-desfazer-msg').textContent = msg;
+            document.getElementById('toast-desfazer').classList.remove('translate-y-32', 'opacity-0');
             clearTimeout(timerDesfazer);
-            timerDesfazer = setTimeout(() => {
-                window.esconderToastDesfazer();
-            }, 10000); // Exibe o botão Desfazer por 10 segundos
-        };
+            timerDesfazer = setTimeout(esconderToastDesfazer, 10000);
+        }
 
-        window.esconderToastDesfazer = function() {
-            const toastInfo = document.getElementById('toast-desfazer');
-            toastInfo.classList.add('translate-y-32', 'opacity-0');
-            estadoDesfazer = null; 
-        };
+        function esconderToastDesfazer() {
+            document.getElementById('toast-desfazer').classList.add('translate-y-32', 'opacity-0');
+            estadoDesfazer = null;
+        }
 
-        window.executarDesfazer = async function() {
+        async function executarDesfazer() {
             if (!estadoDesfazer) return;
-
             let payload = { notas: {} };
-            
-            // Restaura os valores antigos no estado local e prepara o payload pro Firebase
-            for (const chave in estadoDesfazer) {
-                const valorAntigo = estadoDesfazer[chave];
-                if (valorAntigo === null) {
-                    delete estado.notas[chave];
-                    payload.notas[chave] = deleteField();
-                } else {
-                    estado.notas[chave] = valorAntigo;
-                    payload.notas[chave] = valorAntigo;
-                }
+            for (const c in estadoDesfazer) {
+                if (estadoDesfazer[c] === null) { delete estado.notas[c]; payload.notas[c] = deleteField(); } 
+                else { estado.notas[c] = estadoDesfazer[c]; payload.notas[c] = estadoDesfazer[c]; }
             }
+            esconderToastDesfazer(); renderizarPlanilha(); salvarBatchNoBanco(payload); mostrarToast("Ação desfeita");
+        }
 
-            window.esconderToastDesfazer();
-            renderizarPlanilha();
-            salvarBatchNoBanco(payload);
-            
-            const toast = document.getElementById('toast-message');
-            toast.textContent = "Ação desfeita com sucesso!";
-            mostrarToast();
-            setTimeout(() => toast.textContent = "Notas salvas com sucesso!", 3500);
-        };
-
-        // Ação de Preencher Coluna
-        window.preencherColuna = async function(discId) {
-            const turmaId = estado.turmaSelecionada;
-            if (!turmaId) return;
-
+        async function preencherColuna(discId) {
+            const tId = estado.turmaSelecionada;
             const input = document.getElementById(`input-repeat-${discId}`);
-            let valor = parseFloat(input.value);
-            
-            if (isNaN(valor) || valor < 1 || valor > 6) {
-                alert("Por favor, digite uma nota válida entre 1 e 6 no campo abaixo da coluna para repeti-la.");
-                return;
-            }
+            let val = parseFloat(input.value);
+            if (isNaN(val) || val < 1 || val > 6) return alert("Nota inválida (1 a 6)");
+            if (!confirm(`Preencher coluna com ${val}?`)) return;
 
-            if (!confirm(`Deseja preencher TODOS os alunos desta coluna com a nota ${valor}?`)) return;
-
-            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
-            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-            const discNome = disciplinas.find(d => d.id === discId)?.nome || "Desconhecida";
-
-            let notasOriginais = {};
-            let payload = { notas: {} };
-
-            alunos.forEach(aluno => {
-                const chave = `${turmaId}_${aluno.id}_${discId}`;
-                // Salva o que estava lá antes para o Desfazer (pode ser null se estava vazio)
-                notasOriginais[chave] = estado.notas[chave] !== undefined ? estado.notas[chave] : null;
-
-                estado.notas[chave] = valor;
-                payload.notas[chave] = valor;
+            let notasOriginais = {}, payload = { notas: {} };
+            DADOS_ESCOLA.alunos[tId].forEach(a => {
+                const c = `${tId}_${a.id}_${discId}`;
+                notasOriginais[c] = estado.notas[c] !== undefined ? estado.notas[c] : null;
+                estado.notas[c] = val; payload.notas[c] = val;
             });
 
-            window.salvarEstadoDesfazer(notasOriginais, `Coluna preenchida com a nota ${valor}`);
-            renderizarPlanilha(); 
-            salvarBatchNoBanco(payload); 
-            
-            // Regista a versão no histórico do Firebase
-            await window.registrarNoHistorico(`Preencheu coluna: ${discNome} com nota ${valor}`);
-            
-            input.value = ''; 
-        };
+            salvarEstadoDesfazer(notasOriginais, `Coluna preenchida`);
+            renderizarPlanilha(); salvarBatchNoBanco(payload);
+            await registrarNoHistorico(`Preencheu coluna com ${val}`);
+            input.value = '';
+        }
 
-        // Ação de Limpar Coluna
-        window.limparColuna = async function(discId) {
-            const turmaId = estado.turmaSelecionada;
-            if (!turmaId) return;
+        async function limparColuna(discId) {
+            const tId = estado.turmaSelecionada;
+            if (!confirm("Apagar TODAS as notas desta coluna?")) return;
 
-            if (!confirm("ATENÇÃO: Tem certeza que deseja APAGAR TODAS as notas desta coluna?")) return;
-
-            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
-            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-            const discNome = disciplinas.find(d => d.id === discId)?.nome || "Desconhecida";
-
-            let notasOriginais = {};
-            let payload = { notas: {} };
-            let temNotaParaApagar = false;
-
-            alunos.forEach(aluno => {
-                const chave = `${turmaId}_${aluno.id}_${discId}`;
-                if (estado.notas[chave] !== undefined) {
-                    notasOriginais[chave] = estado.notas[chave];
-                    delete estado.notas[chave];
-                    payload.notas[chave] = deleteField();
-                    temNotaParaApagar = true;
+            let notasOriginais = {}, payload = { notas: {} }, mudou = false;
+            DADOS_ESCOLA.alunos[tId].forEach(a => {
+                const c = `${tId}_${a.id}_${discId}`;
+                if (estado.notas[c] !== undefined) {
+                    notasOriginais[c] = estado.notas[c];
+                    delete estado.notas[c]; payload.notas[c] = deleteField(); mudou = true;
                 }
             });
 
-            if (!temNotaParaApagar) {
-                alert("Esta coluna já está totalmente vazia.");
-                return;
-            }
-
-            window.salvarEstadoDesfazer(notasOriginais, "As notas da coluna foram apagadas.");
-            renderizarPlanilha();
-            salvarBatchNoBanco(payload);
-
-            // Regista a versão no histórico do Firebase
-            await window.registrarNoHistorico(`Apagou notas da coluna: ${discNome}`);
-        };
-
+            if (!mudou) return alert("Coluna já vazia.");
+            salvarEstadoDesfazer(notasOriginais, "Coluna apagada");
+            renderizarPlanilha(); salvarBatchNoBanco(payload);
+            await registrarNoHistorico(`Apagou coluna`);
+        }
 
         function inicializarInterface() {
-            Object.keys(DADOS_ESCOLA.disciplinas).forEach(turmaId => {
-                DADOS_ESCOLA.disciplinas[turmaId].sort((a, b) => a.nome.localeCompare(b.nome));
-            });
+            const selTurma = document.getElementById('turma-select');
+            selTurma.innerHTML = '<option value="" disabled selected>Selecione...</option>' + 
+                                 DADOS_ESCOLA.turmas.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
 
-            const seletor = document.getElementById('turma-select');
-            let seletorHTML = '<option value="" disabled selected>Selecione uma Turma...</option>';
-            seletorHTML += DADOS_ESCOLA.turmas.map(t => `<option value="${t.id}">${t.nome}</option>`).join('');
-            seletor.innerHTML = seletorHTML;
-
-            seletor.addEventListener('change', (e) => {
+            selTurma.addEventListener('change', (e) => {
                 estado.turmaSelecionada = e.target.value;
-                atualizarSeletorProfessor();
-                renderizarPlanilha();
-                document.getElementById('btn-importar').disabled = false;
-                document.getElementById('btn-exportar').disabled = false;
-                document.getElementById('btn-salvar').disabled = false;
-                document.getElementById('btn-historico').disabled = false;
+                atualizarSeletorProfessor(); renderizarPlanilha();
             });
 
-            const profSeletor = document.getElementById('prof-select');
-            profSeletor.addEventListener('change', (e) => {
-                estado.professorSelecionado = e.target.value;
-                renderizarPlanilha();
+            document.getElementById('prof-select').addEventListener('change', (e) => {
+                estado.professorSelecionado = e.target.value; renderizarPlanilha();
             });
 
-            document.getElementById('btn-salvar').addEventListener('click', () => {
-                salvarDadosNoBanco(true);
-            });
+            document.getElementById('btn-salvar').addEventListener('click', () => salvarDadosNoBanco(true));
+            document.getElementById('btn-historico').addEventListener('click', abrirModalHistorico);
+            document.getElementById('btn-exportar').addEventListener('click', exportarCSV);
             
-            document.getElementById('btn-historico').addEventListener('click', window.abrirModalHistorico);
-
-            atualizarSeletorProfessor();
-            document.getElementById('btn-importar').disabled = true;
-            document.getElementById('btn-exportar').disabled = true;
-            document.getElementById('btn-salvar').disabled = true;
-            document.getElementById('btn-historico').disabled = true;
-            
-            document.getElementById('btn-exportar').addEventListener('click', exportarParaCSV);
-
-            // Novos Eventos para Importação de Backup
-            document.getElementById('btn-importar').addEventListener('click', () => {
-                document.getElementById('input-importar').click();
-            });
-
+            document.getElementById('btn-importar').addEventListener('click', () => document.getElementById('input-importar').click());
             document.getElementById('input-importar').addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
                 const reader = new FileReader();
-                reader.onload = async (event) => {
-                    const text = event.target.result;
-                    processarCSVImportacao(text);
-                    e.target.value = ''; // Limpa o input para poder importar o mesmo arquivo novamente se precisar
-                };
-                reader.readAsText(file, 'UTF-8');
+                reader.onload = (ev) => { processarCSV(ev.target.result); e.target.value = ''; };
+                if(e.target.files[0]) reader.readAsText(e.target.files[0], 'UTF-8');
             });
 
             document.getElementById('table-body').addEventListener('input', (e) => {
                 if(e.target.classList.contains('cell-input')) {
-                    const alunoId = e.target.dataset.aluno;
-                    const discId = e.target.dataset.disciplina;
-                    let valor = parseFloat(e.target.value);
+                    let v = parseFloat(e.target.value);
+                    const ch = `${estado.turmaSelecionada}_${e.target.dataset.aluno}_${e.target.dataset.disciplina}`;
                     
-                    const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
-
-                    if (!isNaN(valor)) {
-                        if(valor < 1) valor = 1;
-                        if(valor > 6) valor = 6;
-                        estado.notas[chave] = valor;
-                        // Gravação unitária imediata
-                        salvarNotaIndividualNoBanco(chave, valor);
+                    if (!isNaN(v)) {
+                        if(v < 1) v = 1; if(v > 6) v = 6;
+                        estado.notas[ch] = v; salvarNotaIndividualNoBanco(ch, v);
                     } else if (e.target.value === '') {
-                        delete estado.notas[chave]; 
-                        // Registro de exclusão unitária imediata
-                        salvarNotaIndividualNoBanco(chave, null);
+                        delete estado.notas[ch]; salvarNotaIndividualNoBanco(ch, null);
                     }
-                    
-                    calcularMediasEmTempoReal();
+                    calcularMedias();
                 }
             });
-            
-            document.getElementById('table-body').addEventListener('change', (e) => {
-                 if(e.target.classList.contains('cell-input')) {
-                     let valor = parseFloat(e.target.value);
-                     if(!isNaN(valor)) {
-                         e.target.value = valor; 
-                     }
-                 }
-            });
-            
-            renderizarPlanilha();
         }
 
         function atualizarSeletorProfessor() {
-            const profSeletor = document.getElementById('prof-select');
-            const turmaId = estado.turmaSelecionada;
-
-            if (!turmaId) {
-                profSeletor.innerHTML = `<option value="Todos">Aguardando turma...</option>`;
-                profSeletor.disabled = true;
-                return;
-            }
-
-            profSeletor.disabled = false;
-            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-            const professoresUnicos = [...new Set(disciplinas.map(d => d.professor))].sort();
-            
-            let opcoesHTML = `<option value="Todos">Todos</option>`;
-            professoresUnicos.forEach(prof => {
-                opcoesHTML += `<option value="${prof}">${prof}</option>`;
-            });
-            profSeletor.innerHTML = opcoesHTML;
-            
-            estado.professorSelecionado = 'Todos';
-            profSeletor.value = 'Todos';
+            const sel = document.getElementById('prof-select');
+            const tId = estado.turmaSelecionada;
+            if (!tId) return;
+            const profs = [...new Set(DADOS_ESCOLA.disciplinas[tId].map(d => d.professor))].sort();
+            sel.innerHTML = `<option value="Todos">Todos</option>` + profs.map(p => `<option value="${p}">${p}</option>`).join('');
+            estado.professorSelecionado = 'Todos'; sel.disabled = false;
         }
 
         function renderizarPlanilha() {
-            const tableContainer = document.getElementById('table-container');
-            const instructionsContainer = document.getElementById('instructions-container');
-            const turmaId = estado.turmaSelecionada;
+            const tId = estado.turmaSelecionada;
+            if (!tId) return;
+            document.getElementById('instructions-container').classList.add('hidden');
+            document.getElementById('table-container').classList.remove('hidden');
 
-            if (!turmaId) {
-                tableContainer.classList.add('hidden');
-                instructionsContainer.classList.remove('hidden');
-                return;
-            }
+            const alunos = DADOS_ESCOLA.alunos[tId];
+            const discs = DADOS_ESCOLA.disciplinas[tId];
+            const pSel = estado.professorSelecionado;
 
-            instructionsContainer.classList.add('hidden');
-            tableContainer.classList.remove('hidden');
-
-            if (!dadosCarregadosInicialmente) {
-                document.getElementById('loading-overlay').style.display = 'flex';
-            }
-
-            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
-            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-
-            // 1. Cabeçalho
-            let theadHTML = `<tr>
-                <th scope="col" class="px-4 py-3 border-r border-slate-300 bg-slate-200 min-w-[250px] sticky left-0 z-50 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Nome do Aluno</th>`;
-            
-            disciplinas.forEach(d => {
-                const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
-                const corFundoTh = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
-                
-                theadHTML += `<th scope="col" class="px-2 py-3 border-r border-slate-200 text-center w-32 transition-colors duration-300 ${corFundoTh}">
-                    <div class="font-bold text-slate-800">${d.nome}</div>
-                    <div class="text-[10px] font-semibold text-slate-600 truncate bg-white/50 rounded mt-1 px-1 py-0.5" title="${d.professor}">${d.professor}</div>
-                </th>`;
+            // Header
+            let th = `<tr><th class="px-4 py-3 bg-slate-200 min-w-[250px] sticky left-0 z-50">Nome do Aluno</th>`;
+            discs.forEach(d => {
+                const cor = (pSel !== 'Todos' && pSel === d.professor) ? CORES_PROFESSORES[d.professor] : '';
+                th += `<th class="px-2 py-3 text-center w-32 border-l border-slate-300 ${cor}"><b>${d.nome}</b><br><small>${d.professor}</small></th>`;
             });
-            theadHTML += `<th scope="col" class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32 font-bold border-l border-blue-200">Média do Aluno</th></tr>`;
-            document.getElementById('table-head').innerHTML = theadHTML;
+            th += `<th class="px-4 py-3 bg-blue-50 text-blue-800 text-center w-32">Média</th></tr>`;
+            document.getElementById('table-head').innerHTML = th;
 
-            // 2. Corpo
-            let tbodyHTML = '';
-            alunos.forEach(aluno => {
-                tbodyHTML += `<tr class="hover:bg-blue-50 transition-colors group">
-                    <td class="px-4 py-2 border-r border-slate-200 font-medium sticky left-0 bg-white group-hover:bg-blue-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${aluno.nome}</td>`;
-                
-                disciplinas.forEach(d => {
-                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
-                    const nota = estado.notas[chave] !== undefined ? estado.notas[chave] : '';
-                    
-                    const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
-                    const corFundoTd = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
-                    
-                    tbodyHTML += `<td class="border-r border-slate-200 p-0 transition-colors duration-300 ${corFundoTd}">
-                        <input type="number" 
-                               class="cell-input" 
-                               min="1" max="6" step="0.5"
-                               data-aluno="${aluno.id}" 
-                               data-disciplina="${d.id}"
-                               value="${nota}"
-                               placeholder="-">
-                    </td>`;
+            // Body
+            let tb = '';
+            alunos.forEach(a => {
+                tb += `<tr><td class="px-4 py-2 bg-white sticky left-0 z-20 font-medium border-b border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">${a.nome}</td>`;
+                discs.forEach(d => {
+                    const c = `${tId}_${a.id}_${d.id}`;
+                    const n = estado.notas[c] !== undefined ? estado.notas[c] : '';
+                    const cor = (pSel !== 'Todos' && pSel === d.professor) ? CORES_PROFESSORES[d.professor] : '';
+                    tb += `<td class="border-l border-b border-slate-200 p-0 ${cor}"><input type="number" class="cell-input" min="1" max="6" step="0.5" data-aluno="${a.id}" data-disciplina="${d.id}" value="${n}"></td>`;
                 });
-                
-                tbodyHTML += `<td class="px-4 py-2 bg-blue-50/30 text-center font-bold text-blue-800 border-l border-blue-200" id="media-aluno-${aluno.id}">-</td></tr>`;
+                tb += `<td class="px-4 py-2 bg-blue-50/50 text-center font-bold text-blue-800 border-l border-b border-blue-200" id="m-a-${a.id}">-</td></tr>`;
             });
-            
-            if(alunos.length === 0) {
-                tbodyHTML = `<tr><td colspan="${disciplinas.length + 2}" class="p-8 text-center text-slate-500">Nenhum aluno registrado nesta turma.</td></tr>`;
-            }
-            
-            document.getElementById('table-body').innerHTML = tbodyHTML;
+            document.getElementById('table-body').innerHTML = tb;
 
-            // 3. Rodapé (Média e Ações Rápidas)
-            let tfootHTML = `<tr><td class="px-4 py-3 border-r border-slate-300 text-right font-bold text-slate-700 sticky left-0 bg-slate-50 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Média da Turma:</td>`;
-            disciplinas.forEach(d => {
-                const isDestacado = estado.professorSelecionado !== 'Todos' && estado.professorSelecionado === d.professor;
-                const corFundoTf = isDestacado ? CORES_PROFESSORES[d.professor] || 'bg-yellow-200' : 'bg-transparent';
-                
-                tfootHTML += `<td class="px-4 py-3 border-r border-slate-200 text-center font-bold text-blue-700 transition-colors duration-300 ${corFundoTf}" id="media-disc-${d.id}">-</td>`;
-            });
-            tfootHTML += `<td class="px-4 py-3 bg-blue-100 text-blue-900 text-center font-bold border-l border-blue-200" id="media-geral-turma">-</td></tr>`;
-
-            // Linha de Ações na Coluna
-            tfootHTML += `<tr class="bg-slate-100 border-t-2 border-slate-200">
-                <td class="px-4 py-4 border-r border-slate-300 text-right text-xs font-bold text-slate-500 uppercase tracking-wider align-middle sticky left-0 bg-slate-100 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                    Ações Rápidas:
-                </td>`;
-            disciplinas.forEach(d => {
-                tfootHTML += `<td class="px-2 py-3 border-r border-slate-200 text-center align-middle">
-                    <div class="flex flex-col gap-2 items-center justify-center">
-                        <div class="flex items-center w-full max-w-[110px] bg-white border border-gray-300 rounded shadow-sm focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500 overflow-hidden">
-                            <input type="number" id="input-repeat-${d.id}" min="1" max="6" step="0.5" class="w-full text-center text-sm py-1.5 outline-none font-medium text-slate-700" placeholder="Nota">
-                            <button onclick="window.preencherColuna('${d.id}')" class="bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 border-l border-gray-300 transition-colors" title="Repetir nota em toda a coluna">
-                                <i class="fas fa-check"></i>
-                            </button>
-                        </div>
-                        <button onclick="window.limparColuna('${d.id}')" class="text-[11px] text-red-500 hover:text-red-700 font-semibold transition-colors flex items-center justify-center gap-1 bg-red-50 hover:bg-red-100 px-2 py-1 rounded w-full max-w-[110px]">
-                            <i class="fas fa-trash-alt"></i> Limpar
-                        </button>
-                    </div>
+            // Footer
+            let tf = `<tr><td class="px-4 py-3 text-right font-bold bg-slate-50 sticky left-0 z-20">Média:</td>`;
+            discs.forEach(d => { tf += `<td class="text-center font-bold text-blue-700 border-l border-slate-200" id="m-d-${d.id}">-</td>`; });
+            tf += `<td class="text-center font-bold bg-blue-100 border-l border-blue-200" id="m-g">-</td></tr>`;
+            
+            // Ações rápidas (agora precisamos vincular os eventos manualmente pois tiramos do HTML inline)
+            tf += `<tr class="bg-slate-100"><td class="px-4 py-3 text-right text-xs font-bold uppercase sticky left-0 z-20">Ações:</td>`;
+            discs.forEach(d => {
+                tf += `<td class="p-2 border-l border-slate-200 text-center">
+                    <input type="number" id="input-repeat-${d.id}" class="w-16 text-center text-sm border p-1 rounded mb-1" placeholder="Nota"><br>
+                    <button class="btn-preencher text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded mb-1" data-id="${d.id}">Repetir</button>
+                    <button class="btn-limpar text-xs bg-red-100 text-red-700 px-2 py-1 rounded" data-id="${d.id}">Limpar</button>
                 </td>`;
             });
-            tfootHTML += `<td class="bg-slate-100 border-l border-slate-200"></td></tr>`;
+            tf += `<td></td></tr>`;
+            document.getElementById('table-foot').innerHTML = tf;
 
-            document.getElementById('table-foot').innerHTML = tfootHTML;
+            // Bind dos botões dinâmicos do footer
+            document.querySelectorAll('.btn-preencher').forEach(b => b.addEventListener('click', e => preencherColuna(e.target.dataset.id)));
+            document.querySelectorAll('.btn-limpar').forEach(b => b.addEventListener('click', e => limparColuna(e.target.dataset.id)));
 
-            calcularMediasEmTempoReal();
+            calcularMedias();
         }
 
-        // Atualização suave da grelha em tempo real
         function atualizarValoresNaTela() {
-            const inputs = document.querySelectorAll('.cell-input');
-            inputs.forEach(input => {
-                const alunoId = input.dataset.aluno;
-                const discId = input.dataset.disciplina;
-                const chave = `${estado.turmaSelecionada}_${alunoId}_${discId}`;
-                const nota = estado.notas[chave];
-                
-                // Evita tirar o foco ou alterar o que a pessoa está a digitar naquele milissegundo exato
-                if (document.activeElement !== input) {
-                    input.value = nota !== undefined ? nota : '';
-                }
+            document.querySelectorAll('.cell-input').forEach(i => {
+                const n = estado.notas[`${estado.turmaSelecionada}_${i.dataset.aluno}_${i.dataset.disciplina}`];
+                if (document.activeElement !== i) i.value = n !== undefined ? n : '';
             });
-            calcularMediasEmTempoReal();
+            calcularMedias();
         }
 
-        function calcularMediasEmTempoReal() {
-            const turmaId = estado.turmaSelecionada;
-            if(!turmaId) return; 
+        function calcularMedias() {
+            const tId = estado.turmaSelecionada; if(!tId) return;
+            let sGt = 0, qGt = 0;
 
-            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
-            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-
-            let somaGeralTurma = 0;
-            let totalNotasGeral = 0;
-
-            alunos.forEach(aluno => {
-                let somaAluno = 0;
-                let contAluno = 0;
-
-                disciplinas.forEach(d => {
-                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
-                    const nota = estado.notas[chave];
-                    if (nota !== undefined && nota !== null) {
-                        somaAluno += Number(nota);
-                        contAluno++;
-                    }
+            DADOS_ESCOLA.alunos[tId].forEach(a => {
+                let sA = 0, qA = 0;
+                DADOS_ESCOLA.disciplinas[tId].forEach(d => {
+                    const n = estado.notas[`${tId}_${a.id}_${d.id}`];
+                    if(n !== undefined) { sA+=Number(n); qA++; }
                 });
-
-                const mediaAlunoElem = document.getElementById(`media-aluno-${aluno.id}`);
-                if (mediaAlunoElem) {
-                    if (contAluno > 0) {
-                        const media = somaAluno / contAluno;
-                        mediaAlunoElem.textContent = media.toFixed(1);
-                        somaGeralTurma += media;
-                        totalNotasGeral++;
-                    } else {
-                        mediaAlunoElem.textContent = '-';
-                    }
-                }
+                const el = document.getElementById(`m-a-${a.id}`);
+                if(el) { el.textContent = qA>0 ? (sA/qA).toFixed(1) : '-'; if(qA>0){sGt+=(sA/qA); qGt++;} }
             });
 
-            disciplinas.forEach(d => {
-                let somaDisc = 0;
-                let contDisc = 0;
-
-                alunos.forEach(aluno => {
-                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
-                    const nota = estado.notas[chave];
-                    if (nota !== undefined && nota !== null) {
-                        somaDisc += Number(nota);
-                        contDisc++;
-                    }
+            DADOS_ESCOLA.disciplinas[tId].forEach(d => {
+                let sD = 0, qD = 0;
+                DADOS_ESCOLA.alunos[tId].forEach(a => {
+                    const n = estado.notas[`${tId}_${a.id}_${d.id}`];
+                    if(n !== undefined) { sD+=Number(n); qD++; }
                 });
-
-                const mediaDiscElem = document.getElementById(`media-disc-${d.id}`);
-                if (mediaDiscElem) {
-                    if (contDisc > 0) {
-                        mediaDiscElem.textContent = (somaDisc / contDisc).toFixed(1);
-                    } else {
-                        mediaDiscElem.textContent = '-';
-                    }
-                }
+                const el = document.getElementById(`m-d-${d.id}`);
+                if(el) el.textContent = qD>0 ? (sD/qD).toFixed(1) : '-';
             });
 
-            const mediaGeralElem = document.getElementById('media-geral-turma');
-            if (mediaGeralElem) {
-                if (totalNotasGeral > 0) {
-                    mediaGeralElem.textContent = (somaGeralTurma / totalNotasGeral).toFixed(1);
-                } else {
-                    mediaGeralElem.textContent = '-';
-                }
-            }
+            const eg = document.getElementById('m-g');
+            if(eg) eg.textContent = qGt>0 ? (sGt/qGt).toFixed(1) : '-';
         }
 
-        // ============================================================================
-        // 4. UTILITÁRIOS (Toast, Status UI)
-        // ============================================================================
-        
-        function exportarParaCSV() {
-            const turmaId = estado.turmaSelecionada;
-            const alunos = DADOS_ESCOLA.alunos[turmaId] || [];
-            const disciplinas = DADOS_ESCOLA.disciplinas[turmaId] || [];
-            
-            if (alunos.length === 0) {
-                alert("Não há alunos para exportar nesta turma.");
-                return;
-            }
-
-            let csvContent = "\uFEFF"; 
-            
-            let header = ["Nome do Aluno"];
-            disciplinas.forEach(d => header.push(d.nome));
-            header.push("Média do Aluno");
-            csvContent += header.join(";") + "\r\n";
-
-            alunos.forEach(aluno => {
-                let row = [aluno.nome];
-                let soma = 0; 
-                let cont = 0;
-                
-                disciplinas.forEach(d => {
-                    const chave = `${turmaId}_${aluno.id}_${d.id}`;
-                    let nota = estado.notas[chave];
-                    if (nota !== undefined && nota !== null) {
-                        row.push(nota.toString().replace('.', ','));
-                        soma += Number(nota);
-                        cont++;
-                    } else {
-                        row.push("");
-                    }
+        // Export/Import simplificados para caber na lógica
+        function exportarCSV() {
+            const tId = estado.turmaSelecionada;
+            if(!tId) return;
+            let csv = "\uFEFFNome do Aluno;" + DADOS_ESCOLA.disciplinas[tId].map(d=>d.nome).join(';') + ";Média\n";
+            DADOS_ESCOLA.alunos[tId].forEach(a => {
+                let linha = [a.nome]; let s=0, q=0;
+                DADOS_ESCOLA.disciplinas[tId].forEach(d => {
+                    const n = estado.notas[`${tId}_${a.id}_${d.id}`];
+                    linha.push(n!==undefined ? n.toString().replace('.',',') : '');
+                    if(n!==undefined){ s+=Number(n); q++; }
                 });
-                
-                let media = cont > 0 ? (soma / cont).toFixed(1).replace('.', ',') : "";
-                row.push(media);
-                csvContent += row.join(";") + "\r\n";
+                linha.push(q>0 ? (s/q).toFixed(1).replace('.',',') : '');
+                csv += linha.join(';') + "\n";
             });
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            
-            const dataAtual = new Date().toLocaleDateString('pt-BR').replace(/\//g, '-');
-            const nomeTurma = DADOS_ESCOLA.turmas.find(t=>t.id===turmaId).nome;
-            
-            link.setAttribute("href", url);
-            link.setAttribute("download", `Backup_Notas_${nomeTurma}_${dataAtual}.csv`);
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            link.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+            link.download = `Backup_${tId}.csv`; link.click();
         }
 
-        // Função para processar o CSV importado e restaurar os dados
-        async function processarCSVImportacao(csvText) {
-            const turmaId = estado.turmaSelecionada;
-            if (!turmaId) {
-                alert("Selecione uma turma antes de importar os dados.");
-                return;
-            }
-
-            // Remove caracteres especiais de BOM e divide por linhas
-            const linhas = csvText.replace(/^\uFEFF/, '').split('\n').map(l => l.trim()).filter(l => l !== '');
-            if (linhas.length < 2) {
-                alert("O arquivo está vazio ou no formato incorreto.");
-                return;
-            }
-
-            const header = linhas[0].split(';');
-            const alunosTurma = DADOS_ESCOLA.alunos[turmaId] || [];
-            const disciplinasTurma = DADOS_ESCOLA.disciplinas[turmaId] || [];
-
-            // Mapeia os índices das colunas no CSV para as disciplinas da turma selecionada
-            const mapaDisciplinas = {};
-            for (let i = 1; i < header.length - 1; i++) {
-                const nomeDisc = header[i];
-                const disc = disciplinasTurma.find(d => d.nome === nomeDisc);
-                if (disc) {
-                    mapaDisciplinas[i] = disc.id;
-                }
-            }
-
-            let payload = { notas: {} };
-            let notasOriginais = {};
-            let alteracoesCount = 0;
-
-            for (let i = 1; i < linhas.length; i++) {
-                const colunas = linhas[i].split(';');
-                const nomeAluno = colunas[0];
-                
-                const aluno = alunosTurma.find(a => a.nome === nomeAluno);
-                if (!aluno) continue; // Pula alunos que não são desta turma
-
-                for (let j = 1; j < colunas.length - 1; j++) {
-                    const discId = mapaDisciplinas[j];
-                    if (!discId) continue;
-
-                    const valorStr = colunas[j].trim();
-                    let valorNum = null;
-                    if (valorStr !== "") {
-                        valorNum = parseFloat(valorStr.replace(',', '.')); // Aceita vírgula ou ponto
-                    }
-
-                    const chave = `${turmaId}_${aluno.id}_${discId}`;
-                    notasOriginais[chave] = estado.notas[chave] !== undefined ? estado.notas[chave] : null;
-
-                    // Verifica se o valor sofreu alguma alteração real (evita gravar dados desnecessários)
-                    const notaAtual = estado.notas[chave] !== undefined ? estado.notas[chave] : null;
-
-                    if (valorNum !== null && !isNaN(valorNum) && valorNum >= 1 && valorNum <= 6) {
-                        if (notaAtual !== valorNum) {
-                            estado.notas[chave] = valorNum;
-                            payload.notas[chave] = valorNum;
-                            alteracoesCount++;
-                        }
-                    } else if (valorStr === "") {
-                        if (notaAtual !== null) {
-                            delete estado.notas[chave];
-                            payload.notas[chave] = deleteField();
-                            alteracoesCount++;
-                        }
+        async function processarCSV(txt) {
+            const tId = estado.turmaSelecionada; if(!tId) return;
+            const lin = txt.replace(/^\uFEFF/,'').split('\n').map(x=>x.trim()).filter(x=>x);
+            const head = lin[0].split(';');
+            const mapD = {};
+            DADOS_ESCOLA.disciplinas[tId].forEach(d => {
+                const idx = head.indexOf(d.nome); if(idx>0) mapD[idx] = d.id;
+            });
+            let payload={notas:{}}, alt=0;
+            for(let i=1; i<lin.length; i++) {
+                const col = lin[i].split(';');
+                const al = DADOS_ESCOLA.alunos[tId].find(x=>x.nome===col[0]);
+                if(!al) continue;
+                for(let j=1; j<col.length-1; j++) {
+                    const dId = mapD[j]; if(!dId) continue;
+                    const v = col[j].trim()==="" ? null : parseFloat(col[j].replace(',','.'));
+                    const ch = `${tId}_${al.id}_${dId}`;
+                    if(v !== null && !isNaN(v)) {
+                        if(estado.notas[ch]!==v){ estado.notas[ch]=v; payload.notas[ch]=v; alt++; }
+                    } else if(estado.notas[ch]!==undefined) {
+                        delete estado.notas[ch]; payload.notas[ch]=deleteField(); alt++;
                     }
                 }
             }
-
-            if (alteracoesCount > 0) {
-                window.salvarEstadoDesfazer(notasOriginais, "Backup importado e restaurado.");
-                renderizarPlanilha();
-                salvarBatchNoBanco(payload);
-                await window.registrarNoHistorico(`Restaurou Backup a partir de arquivo CSV`);
-                alert("Backup restaurado com sucesso! Os dados foram enviados para a nuvem.");
-            } else {
-                alert("Nenhuma nota diferente foi encontrada no arquivo para a turma selecionada (Tudo já está igual).");
-            }
+            if(alt>0) { renderizarPlanilha(); salvarBatchNoBanco(payload); await registrarNoHistorico("Restaurou CSV"); alert("Restaurado com sucesso!"); }
         }
 
-        function atualizarStatusNuvem(ok, texto) {
-            const icone = document.getElementById('cloud-icon');
-            const spanText = document.getElementById('cloud-text');
-            spanText.textContent = texto;
-            
-            if (ok) {
-                icone.className = "fas fa-cloud-check text-green-300";
-            } else {
-                icone.className = "fas fa-cloud-xmark text-red-300";
-            }
+        function atualizarStatusNuvem(ok, txt) {
+            const i = document.getElementById('cloud-icon');
+            if(i) i.className = ok ? "fas fa-cloud-check text-green-300" : "fas fa-cloud-xmark text-red-300";
+            const t = document.getElementById('cloud-text');
+            if(t) t.textContent = txt;
         }
 
-        function mostrarToast() {
-            const toast = document.getElementById('toast');
-            toast.classList.remove('translate-y-24', 'opacity-0');
-            setTimeout(() => {
-                toast.classList.add('translate-y-24', 'opacity-0');
-            }, 3000);
+        function mostrarToast(txt="Salvo com sucesso!") {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = txt;
+            if(t) { t.classList.remove('translate-y-24','opacity-0'); setTimeout(()=>t.classList.add('translate-y-24','opacity-0'), 3000); }
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Aplicar cor aleatória ao cabeçalho
-            const header = document.getElementById('main-header');
-            const allGradients = ['from-blue-700', 'to-blue-500', 'from-purple-700', 'to-purple-500', 'from-indigo-700', 'to-indigo-500', 'from-teal-700', 'to-teal-500', 'from-emerald-700', 'to-emerald-500', 'from-rose-700', 'to-rose-500', 'from-orange-600', 'to-orange-400'];
-            const gradientsPairs = [
-                ['from-blue-700', 'to-blue-500'],
-                ['from-purple-700', 'to-purple-500'],
-                ['from-indigo-700', 'to-indigo-500'],
-                ['from-teal-700', 'to-teal-500'],
-                ['from-emerald-700', 'to-emerald-500'],
-                ['from-rose-700', 'to-rose-500'],
-                ['from-orange-600', 'to-orange-400']
-            ];
-            
-            header.classList.remove(...allGradients);
-            const randomGradient = gradientsPairs[Math.floor(Math.random() * gradientsPairs.length)];
-            header.classList.add(...randomGradient);
-
-            inicializarInterface();
-            inicializarFirebase();
-        });
+        // Dá o pontapé inicial no código
+        inicializarAppEFirebase();
 
     </script>
 </body>
