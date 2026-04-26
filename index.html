@@ -101,7 +101,7 @@
         // COLOQUE AQUI O FINAL DO E-MAIL INSTITUCIONAL DA SUA ESCOLA
         // Exemplo: se o email é professor@edu.escola.br, coloque "@edu.escola.br"
         // Qualquer pessoa logada com um email do Google terminando nisso vai entrar.
-        const DOMINIO_PERMITIDO = "educador.edu.es.gov.br"; 
+        const DOMINIO_PERMITIDO = "@educador.edu.es.gov.br"; 
         
         // Mantive a lista caso você queira permitir e-mails pessoais específicos como exceção
         const EMAILS_PERMITIDOS = [
@@ -200,7 +200,10 @@
                         if (dominioOk || emailOk) {
                             userId = user.uid;
                             // Salva os dados do usuário para registrar no histórico depois
-                            estado.usuarioLogado = { nome: user.displayName, email: user.email };
+                            estado.usuarioLogado = { 
+                                nome: user.displayName || user.email.split('@')[0], 
+                                email: user.email 
+                            };
 
                             document.getElementById('login-overlay').style.display = 'none';
                             document.getElementById('app-body').classList.remove('overflow-hidden');
@@ -278,7 +281,8 @@
             if (!document.getElementById('btn-sair-sistema')) {
                 const btnSair = document.createElement('button');
                 btnSair.id = 'btn-sair-sistema';
-                btnSair.innerHTML = `<i class="fas fa-sign-out-alt"></i> Sair (${usuario.displayName.split(' ')[0]})`;
+                const nomeDisplay = usuario.displayName ? usuario.displayName.split(' ')[0] : usuario.email.split('@')[0];
+                btnSair.innerHTML = `<i class="fas fa-sign-out-alt"></i> Sair (${nomeDisplay})`;
                 btnSair.className = "bg-red-500/20 hover:bg-red-500 text-white text-sm px-3 py-1.5 rounded ml-3 transition-colors border border-red-500/30 font-semibold";
                 btnSair.onclick = () => signOut(auth);
                 document.getElementById('main-header').appendChild(btnSair);
@@ -306,6 +310,9 @@
                 } else if (estado.turmaSelecionada) {
                     atualizarValoresNaTela();
                 }
+            }, (erro) => {
+                console.error("Erro Firestore:", erro);
+                alert("Erro de segurança: Você não tem permissão para acessar as notas. Verifique as regras no Firebase.");
             });
         }
 
